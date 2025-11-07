@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>DotEnv Studio - .env Management</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="settings-container">
+        <div class="settings-header">
+            <h1>DotEnv Studio</h1>
+            <button class="close-btn" id="closeBtn">×</button>
+        </div>
+        
+        <div class="settings-content">
+            <div class="sidebar">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search settings...">
+                </div>
+                <nav class="nav-menu" id="navMenu">
+                    <!-- Tabs will be generated dynamically -->
+                </nav>
+            </div>
+            
+            <div class="main-content">
+                <div class="tab-content" id="tabContent">
+                    <!-- Content will be generated dynamically -->
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-cancel" id="cancelBtn">Cancel</button>
+                    <button class="btn btn-save" id="saveBtn">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
+

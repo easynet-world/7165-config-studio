@@ -7,6 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Config Studio - Configuration Management</title>
+    <link rel="stylesheet" href="themes.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -17,6 +18,88 @@
                 <p class="header-tagline">The simplest way to manage configurations.</p>
             </div>
             <div class="header-actions">
+                <div class="theme-selector">
+                    <button class="theme-selector-btn" id="themeSelectorBtn" title="Select Theme">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 3c.46 0 .87.27 1.05.69l1.38 2.81 3.08.45c.47.07.67.65.32.98l-2.23 2.17.53 3.07c.08.47-.39.82-.79.6l-2.76-1.45L9.24 14.6c-.4.22-.87-.13-.79-.6l.53-3.07-2.23-2.17c-.35-.33-.15-.91.32-.98l3.08-.45L10.95 3.69c.18-.42.59-.69 1.05-.69zm0-2C9.79 1 8 2.79 8 5s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zM2 13h2c.55 0 1 .45 1 1v6c0 .55-.45 1-1 1H2c-.55 0-1-.45-1-1v-6c0-.55.45-1 1-1zm18 0h2c.55 0 1 .45 1 1v6c0 .55-.45 1-1 1h-2c-.55 0-1-.45-1-1v-6c0-.55.45-1 1-1z"/>
+                        </svg>
+                        <span id="currentThemeName">Theme</span>
+                    </button>
+                    <div class="theme-dropdown" id="themeDropdown">
+                        <div class="theme-option" data-theme="default">
+                            <span class="theme-option-name">Light (Default)</span>
+                            <span class="theme-option-check">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="theme-option" data-theme="cyberpunk">
+                            <span class="theme-option-name">Cyberpunk</span>
+                            <span class="theme-option-check">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="theme-option" data-theme="vscode-dark">
+                            <span class="theme-option-name">VS Code Dark</span>
+                            <span class="theme-option-check">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="theme-option" data-theme="vscode-light">
+                            <span class="theme-option-name">VS Code Light</span>
+                            <span class="theme-option-check">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="theme-option" data-theme="chatgpt">
+                            <span class="theme-option-name">ChatGPT</span>
+                            <span class="theme-option-check">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="theme-option" data-theme="dracula">
+                            <span class="theme-option-name">Dracula</span>
+                            <span class="theme-option-check">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="theme-option" data-theme="nord">
+                            <span class="theme-option-name">Nord</span>
+                            <span class="theme-option-check">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="theme-option" data-theme="monokai">
+                            <span class="theme-option-name">Monokai</span>
+                            <span class="theme-option-check">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="theme-option" data-theme="custom">
+                            <span class="theme-option-name">Custom CSS</span>
+                            <span class="theme-option-check">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                </div>
                 <button class="btn btn-settings" id="systemSettingsBtn" title="System Settings">
                     <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
                         <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
@@ -60,6 +143,111 @@
                 <div class="action-buttons">
                     <button class="btn btn-cancel" id="cancelBtn">Cancel</button>
                     <button class="btn btn-save" id="saveBtn">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Custom Theme Configuration Modal -->
+    <div class="modal" id="customThemeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Custom Theme Configuration</h2>
+                <button class="modal-close" id="customThemeModalCloseBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Custom CSS File URL</label>
+                    <input type="text" class="form-input" id="customCssUrlInput" placeholder="e.g., /themes/my-theme.css or https://example.com/theme.css">
+                    <div class="form-helper">
+                        Enter the URL or path to your custom CSS file. The file should be accessible from the browser.
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Required CSS Variables</label>
+                    <div class="variables-docs">
+                        <p class="form-helper" style="margin-bottom: 12px;">
+                            Your custom CSS file must define all these variables under <code>[data-theme="custom"]</code>:
+                        </p>
+                        <div class="variables-list">
+                            <details>
+                                <summary class="variables-category">Background Colors</summary>
+                                <ul class="variables-items">
+                                    <li><code>--bg-primary</code> - Main page background</li>
+                                    <li><code>--bg-secondary</code> - Container/card background</li>
+                                    <li><code>--bg-tertiary</code> - Sidebar/secondary areas</li>
+                                    <li><code>--bg-hover</code> - Hover state background</li>
+                                    <li><code>--bg-active</code> - Active/selected state background</li>
+                                    <li><code>--bg-input</code> - Input field background</li>
+                                    <li><code>--bg-input-focus</code> - Input field background when focused</li>
+                                    <li><code>--bg-modal</code> - Modal overlay background</li>
+                                </ul>
+                            </details>
+                            <details>
+                                <summary class="variables-category">Text Colors</summary>
+                                <ul class="variables-items">
+                                    <li><code>--text-primary</code> - Primary text color</li>
+                                    <li><code>--text-secondary</code> - Secondary text color</li>
+                                    <li><code>--text-tertiary</code> - Tertiary/muted text color</li>
+                                    <li><code>--text-inverse</code> - Text on dark backgrounds</li>
+                                </ul>
+                            </details>
+                            <details>
+                                <summary class="variables-category">Border Colors</summary>
+                                <ul class="variables-items">
+                                    <li><code>--border-primary</code> - Primary border color</li>
+                                    <li><code>--border-secondary</code> - Secondary border color</li>
+                                    <li><code>--border-focus</code> - Focused input border color</li>
+                                    <li><code>--border-error</code> - Error state border color</li>
+                                </ul>
+                            </details>
+                            <details>
+                                <summary class="variables-category">Accent Colors</summary>
+                                <ul class="variables-items">
+                                    <li><code>--accent-primary</code> - Primary accent color (buttons, links)</li>
+                                    <li><code>--accent-primary-hover</code> - Primary accent hover state</li>
+                                    <li><code>--accent-secondary</code> - Secondary accent color</li>
+                                    <li><code>--accent-error</code> - Error accent color</li>
+                                    <li><code>--accent-error-hover</code> - Error accent hover state</li>
+                                </ul>
+                            </details>
+                            <details>
+                                <summary class="variables-category">Shadows</summary>
+                                <ul class="variables-items">
+                                    <li><code>--shadow-sm</code> - Small shadow</li>
+                                    <li><code>--shadow-md</code> - Medium shadow</li>
+                                    <li><code>--shadow-focus</code> - Focus ring shadow</li>
+                                    <li><code>--shadow-error</code> - Error focus ring</li>
+                                </ul>
+                            </details>
+                            <details>
+                                <summary class="variables-category">Other</summary>
+                                <ul class="variables-items">
+                                    <li><code>--highlight-bg</code> - Search highlight background</li>
+                                </ul>
+                            </details>
+                        </div>
+                        <div class="form-helper" style="margin-top: 16px;">
+                            <strong>Example CSS:</strong>
+                            <pre class="code-example">[data-theme="custom"] {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --text-primary: #ffffff;
+    /* ... define all other variables ... */
+}</pre>
+                        </div>
+                        <div class="form-helper" style="margin-top: 12px;">
+                            <a href="theme-variables-reference.css" target="_blank" class="helper-link">View complete reference file →</a>
+                            <br>
+                            <a href="examples/custom-theme-example.css" target="_blank" class="helper-link" style="margin-top: 8px; display: inline-block;">View example custom theme →</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button class="btn btn-cancel" id="cancelCustomThemeBtn">Cancel</button>
+                    <button class="btn btn-save" id="saveCustomThemeBtn">Save & Apply</button>
                 </div>
             </div>
         </div>

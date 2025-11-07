@@ -221,14 +221,38 @@ async function registerExampleSystems(registryPath, projectRoot) {
       }
     }
     
+    // Clean up invalid systems (files that don't exist or are from different project)
+    const validSystems = [];
+    for (const system of systems) {
+      try {
+        // Check if file exists
+        await fs.access(system.configPath);
+        // Check if path is within current project (for relative paths)
+        const systemPath = path.relative(projectRoot, system.configPath);
+        if (!systemPath.startsWith('..')) {
+          validSystems.push(system);
+        } else {
+          console.log(`Removing invalid system (outside project): ${system.name} (${system.configPath})`);
+        }
+      } catch (error) {
+        // File doesn't exist, remove from registry
+        console.log(`Removing invalid system (file not found): ${system.name} (${system.configPath})`);
+      }
+    }
+    systems = validSystems;
+    
     // Register each example system if it doesn't already exist
     for (const example of exampleConfigs) {
       const absolutePath = path.isAbsolute(example.configPath) 
         ? path.normalize(example.configPath) 
         : path.normalize(path.join(projectRoot, example.configPath));
       
-      // Check if system with this path already exists
-      const exists = systems.some(s => s.configPath === absolutePath);
+      // Check if system with this path already exists (by normalized path)
+      const exists = systems.some(s => {
+        const normalizedExisting = path.normalize(s.configPath);
+        const normalizedNew = path.normalize(absolutePath);
+        return normalizedExisting === normalizedNew;
+      });
       
       if (!exists) {
         try {
@@ -247,13 +271,13 @@ async function registerExampleSystems(registryPath, projectRoot) {
           // File doesn't exist or validation failed, skip
           console.warn(`Skipping example system ${example.name}: ${error.message}`);
         }
+      } else {
+        console.log(`Example system already registered: ${example.name} (${absolutePath})`);
       }
     }
     
-    // Save updated registry
-    if (exampleConfigs.length > 0) {
-      await saveSystemsRegistry(registryPath, systems);
-    }
+    // Save updated registry (always save to persist cleanup and new registrations)
+    await saveSystemsRegistry(registryPath, systems);
   } catch (error) {
     console.warn('Error registering example systems:', error.message);
     // Don't throw - examples are optional

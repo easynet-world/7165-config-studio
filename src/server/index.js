@@ -4,6 +4,9 @@
  * Config Studio Server Entry Point
  */
 
+// Load environment variables from .env file
+require('dotenv').config();
+
 const path = require('path');
 const http = require('http');
 const { getPort } = require('./config/port');

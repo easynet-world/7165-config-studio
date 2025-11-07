@@ -92,11 +92,13 @@ class SettingsApp {
         this.rawMode = false;
         this.rawContent = '';
         this.originalRawContent = '';
+        this.customCssUrl = null;
         
         this.init();
     }
 
     async init() {
+        this.initTheme();
         this.setupEventListeners();
         // Load systems first, then settings (which will auto-select first system if needed)
         await this.loadSystems();
@@ -202,10 +204,256 @@ class SettingsApp {
         }
     }
 
+    initTheme() {
+        // Theme names mapping
+        this.themeNames = {
+            'default': 'Light (Default)',
+            'cyberpunk': 'Cyberpunk',
+            'vscode-dark': 'VS Code Dark',
+            'vscode-light': 'VS Code Light',
+            'chatgpt': 'ChatGPT',
+            'dracula': 'Dracula',
+            'nord': 'Nord',
+            'monokai': 'Monokai',
+            'custom': 'Custom CSS'
+        };
+        
+        // Initialize default theme (will be loaded from server)
+        this.defaultTheme = 'cyberpunk';
+        
+        // Load saved custom CSS URL if exists
+        const savedCustomCssUrl = localStorage.getItem('configStudioCustomCssUrl');
+        if (savedCustomCssUrl) {
+            this.customCssUrl = savedCustomCssUrl;
+            this.loadCustomCss(savedCustomCssUrl);
+        }
+        
+        // Load default theme from server config, then apply saved theme or default
+        this.loadDefaultTheme().then(() => {
+            const savedTheme = localStorage.getItem('configStudioTheme') || this.defaultTheme;
+            this.setTheme(savedTheme);
+            
+            // If custom theme was saved, load the URL into the input
+            if (savedTheme === 'custom' && savedCustomCssUrl) {
+                const customCssInput = document.getElementById('customCssUrlInput');
+                if (customCssInput) {
+                    customCssInput.value = savedCustomCssUrl;
+                }
+            }
+        });
+    }
+    
+    async loadDefaultTheme() {
+        try {
+            const response = await fetch('/api/config');
+            if (response.ok) {
+                const config = await response.json();
+                if (config.defaultTheme) {
+                    this.defaultTheme = config.defaultTheme;
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to load config from server, using fallback default theme:', error);
+            // Use fallback default
+            this.defaultTheme = 'cyberpunk';
+        }
+    }
+    
+    loadCustomCss(url) {
+        // Remove existing custom CSS link if any
+        const existingLink = document.getElementById('customThemeCss');
+        if (existingLink) {
+            existingLink.remove();
+        }
+        
+        // Create new link element
+        const link = document.createElement('link');
+        link.id = 'customThemeCss';
+        link.rel = 'stylesheet';
+        link.href = url;
+        
+        // Handle load success
+        link.onload = () => {
+            console.log('Custom CSS loaded successfully:', url);
+        };
+        
+        // Handle load error
+        link.onerror = () => {
+            console.error('Failed to load custom CSS:', url);
+            this.showError('Failed to load custom CSS file. Please check the URL and ensure the file is accessible.');
+        };
+        
+        // Add to head
+        document.head.appendChild(link);
+    }
+
+    setTheme(themeName) {
+        // Remove all theme attributes
+        document.documentElement.removeAttribute('data-theme');
+        
+        // Set new theme (only if not default)
+        if (themeName && themeName !== 'default') {
+            document.documentElement.setAttribute('data-theme', themeName);
+        }
+        
+        // Save to localStorage
+        localStorage.setItem('configStudioTheme', themeName);
+        
+        // Update UI
+        this.updateThemeSelector(themeName);
+    }
+
+    updateThemeSelector(themeName) {
+        const themeNameSpan = document.getElementById('currentThemeName');
+        if (themeNameSpan) {
+            themeNameSpan.textContent = this.themeNames[themeName] || 'Theme';
+        }
+        
+        // Update active state in dropdown
+        const themeOptions = document.querySelectorAll('.theme-option');
+        themeOptions.forEach(option => {
+            if (option.dataset.theme === themeName) {
+                option.classList.add('active');
+            } else {
+                option.classList.remove('active');
+            }
+        });
+    }
+    
+    openCustomThemeModal() {
+        const modal = document.getElementById('customThemeModal');
+        if (modal) {
+            modal.classList.add('active');
+            // Load saved URL if exists
+            const customCssInput = document.getElementById('customCssUrlInput');
+            if (customCssInput && this.customCssUrl) {
+                customCssInput.value = this.customCssUrl;
+            }
+        }
+    }
+    
+    closeCustomThemeModal() {
+        const modal = document.getElementById('customThemeModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+    
+    saveCustomTheme() {
+        const customCssInput = document.getElementById('customCssUrlInput');
+        if (!customCssInput) return;
+        
+        const cssUrl = customCssInput.value.trim();
+        
+        if (!cssUrl) {
+            this.showError('Please enter a CSS file URL.');
+            return;
+        }
+        
+        // Validate URL format (basic check)
+        try {
+            // Try to create a URL object to validate
+            new URL(cssUrl, window.location.origin);
+        } catch (e) {
+            // If it's a relative path, that's okay
+            if (!cssUrl.startsWith('/') && !cssUrl.startsWith('./') && !cssUrl.startsWith('../')) {
+                this.showError('Please enter a valid URL or relative path.');
+                return;
+            }
+        }
+        
+        // Save custom CSS URL
+        this.customCssUrl = cssUrl;
+        localStorage.setItem('configStudioCustomCssUrl', cssUrl);
+        
+        // Load the CSS file
+        this.loadCustomCss(cssUrl);
+        
+        // Apply custom theme
+        this.setTheme('custom');
+        
+        // Close modal
+        this.closeCustomThemeModal();
+        
+        // Show success message
+        this.showSuccess('Custom theme loaded successfully!');
+    }
+
     setupEventListeners() {
         document.getElementById('closeBtn').addEventListener('click', () => {
             window.close();
         });
+        
+        // Theme selector
+        const themeSelectorBtn = document.getElementById('themeSelectorBtn');
+        const themeDropdown = document.getElementById('themeDropdown');
+        
+        if (themeSelectorBtn && themeDropdown) {
+            // Toggle dropdown
+            themeSelectorBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                themeDropdown.classList.toggle('active');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!themeSelectorBtn.contains(e.target) && !themeDropdown.contains(e.target)) {
+                    themeDropdown.classList.remove('active');
+                }
+            });
+            
+            // Theme option clicks
+            const themeOptions = document.querySelectorAll('.theme-option');
+            themeOptions.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const themeName = option.dataset.theme;
+                    
+                    if (themeName === 'custom') {
+                        // Open custom theme configuration modal
+                        this.openCustomThemeModal();
+                        themeDropdown.classList.remove('active');
+                    } else {
+                        // Apply theme directly
+                        this.setTheme(themeName);
+                        themeDropdown.classList.remove('active');
+                    }
+                });
+            });
+        }
+        
+        // Custom theme modal
+        const customThemeModal = document.getElementById('customThemeModal');
+        const customThemeModalCloseBtn = document.getElementById('customThemeModalCloseBtn');
+        const cancelCustomThemeBtn = document.getElementById('cancelCustomThemeBtn');
+        const saveCustomThemeBtn = document.getElementById('saveCustomThemeBtn');
+        
+        if (customThemeModalCloseBtn) {
+            customThemeModalCloseBtn.addEventListener('click', () => {
+                this.closeCustomThemeModal();
+            });
+        }
+        
+        if (cancelCustomThemeBtn) {
+            cancelCustomThemeBtn.addEventListener('click', () => {
+                this.closeCustomThemeModal();
+            });
+        }
+        
+        if (saveCustomThemeBtn) {
+            saveCustomThemeBtn.addEventListener('click', () => {
+                this.saveCustomTheme();
+            });
+        }
+        
+        // Close modal on background click
+        if (customThemeModal) {
+            customThemeModal.addEventListener('click', (e) => {
+                if (e.target.id === 'customThemeModal') {
+                    this.closeCustomThemeModal();
+                }
+            });
+        }
 
         document.getElementById('cancelBtn').addEventListener('click', () => {
             if (this.hasChanges) {

@@ -1,0 +1,59 @@
+/* 
+ * Config Studio - Custom Theme CSS Variables Reference
+ * 
+ * To create a custom theme, create a CSS file and define these variables
+ * under the [data-theme="custom"] selector.
+ * 
+ * Example:
+ * 
+ * [data-theme="custom"] {
+ *     --bg-primary: #your-color;
+ *     --bg-secondary: #your-color;
+ *     ... (all variables below)
+ * }
+ * 
+ * See examples/custom-theme-example.css for a complete working example.
+ * 
+ * Required CSS Variables:
+ */
+
+[data-theme="custom"] {
+    /* Background Colors */
+    --bg-primary: #f5f5f5;              /* Main page background */
+    --bg-secondary: #ffffff;             /* Container/card background */
+    --bg-tertiary: #fafafa;              /* Sidebar/secondary areas */
+    --bg-hover: #f0f0f0;                 /* Hover state background */
+    --bg-active: #e8f5e9;                /* Active/selected state background */
+    --bg-input: #ffffff;                 /* Input field background */
+    --bg-input-focus: #ffffff;           /* Input field background when focused */
+    --bg-modal: rgba(0, 0, 0, 0.5);      /* Modal overlay background */
+    
+    /* Text Colors */
+    --text-primary: #333333;             /* Primary text color */
+    --text-secondary: #666666;           /* Secondary text color */
+    --text-tertiary: #999999;            /* Tertiary/muted text color */
+    --text-inverse: #ffffff;             /* Text on dark backgrounds */
+    
+    /* Border Colors */
+    --border-primary: #e0e0e0;            /* Primary border color */
+    --border-secondary: #dddddd;         /* Secondary border color */
+    --border-focus: #4caf50;             /* Focused input border color */
+    --border-error: #f44336;             /* Error state border color */
+    
+    /* Accent Colors */
+    --accent-primary: #4caf50;           /* Primary accent color (buttons, links) */
+    --accent-primary-hover: #45a049;    /* Primary accent hover state */
+    --accent-secondary: #4caf50;        /* Secondary accent color */
+    --accent-error: #f44336;             /* Error accent color */
+    --accent-error-hover: #d32f2f;       /* Error accent hover state */
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.1);           /* Small shadow */
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.3);            /* Medium shadow */
+    --shadow-focus: 0 0 0 3px rgba(76, 175, 80, 0.1);     /* Focus ring shadow */
+    --shadow-error: 0 0 0 3px rgba(244, 67, 54, 0.1);      /* Error focus ring */
+    
+    /* Other */
+    --highlight-bg: #fff9c4;             /* Search highlight background */
+}
+

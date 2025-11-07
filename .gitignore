@@ -1,5 +1,6 @@
 node_modules/
-.env
+# .env is now tracked in git for theme configuration
+# .env
 .env.backup
 *.log
 .DS_Store

@@ -28,6 +28,13 @@ function createApp() {
   app.use('/api/systems', createSystemsRoutes(SYSTEMS_REGISTRY_PATH, PROJECT_ROOT));
   app.use('/api/settings', createSettingsRoutes(ENV_FILE_PATH, SYSTEMS_REGISTRY_PATH, PROJECT_ROOT));
 
+  // Config endpoint - serves configuration from .env
+  app.get('/api/config', (req, res) => {
+    res.json({
+      defaultTheme: process.env.DEFAULT_THEME || 'cyberpunk'
+    });
+  });
+
   // Serve the settings page
   app.get('/', (req, res) => {
     // Set headers to prevent caching of the HTML page

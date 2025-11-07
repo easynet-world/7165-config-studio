@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <!-- Enterprise Service Configuration -->
+  
+  <!-- Server Configuration -->
+  <server>
+    <!-- Server hostname (required) -->
+    <host>enterprise.example.com</host>
+    <!-- Server port number (type:number, min:1, max:65535) -->
+    <port>8443</port>
+    <!-- Protocol type (enum:http|https) -->
+    <protocol>https</protocol>
+    <!-- Request timeout in seconds (type:number, min:1) -->
+    <timeout>60</timeout>
+  </server>
+  
+  <!-- Database Configuration -->
+  <database>
+    <connection>
+      <!-- Database host address (required) -->
+      <host>db.enterprise.com</host>
+      <!-- Database port number (type:number, min:1, max:65535) -->
+      <port>5432</port>
+      <!-- Database name (required) -->
+      <database>enterprise_db</database>
+      <!-- Database username (required) -->
+      <username>enterprise_user</username>
+      <!-- Database password (required) -->
+      <password>secure-password</password>
+    </connection>
+    <pool>
+      <!-- Minimum pool size (type:number, min:1, max:100) -->
+      <min>10</min>
+      <!-- Maximum pool size (type:number, min:1, max:1000) -->
+      <max>50</max>
+      <!-- Idle timeout in milliseconds (type:number, min:1000) -->
+      <idle_timeout>60000</idle_timeout>
+    </pool>
+  </database>
+  
+  <!-- Security Configuration -->
+  <security>
+    <authentication>
+      <!-- Authentication method (enum:oauth2|jwt|basic) -->
+      <method>oauth2</method>
+      <!-- Token expiry time in seconds (type:number, min:60) -->
+      <token_expiry>3600</token_expiry>
+    </authentication>
+    <encryption>
+      <!-- Encryption algorithm (enum:AES-256|AES-128) -->
+      <algorithm>AES-256</algorithm>
+      <!-- Enable key rotation (enum:true|false) -->
+      <key_rotation>true</key_rotation>
+    </encryption>
+  </security>
+  
+  <!-- Monitoring Configuration -->
+  <monitoring>
+    <!-- Enable monitoring (enum:true|false) -->
+    <enabled>true</enabled>
+    <!-- Metrics endpoint path (required if monitoring enabled) -->
+    <metrics_endpoint>/metrics</metrics_endpoint>
+    <!-- Health check interval in seconds (type:number, min:1) -->
+    <health_check_interval>30</health_check_interval>
+  </monitoring>
+  
+  <!-- Logging Configuration -->
+  <logging>
+    <!-- Log level (enum:debug|info|warn|error) -->
+    <level>warn</level>
+    <!-- Log format (enum:xml|json|text) -->
+    <format>xml</format>
+    <!-- Log output file path (required) -->
+    <output>/var/log/enterprise.log</output>
+  </logging>
+</configuration>

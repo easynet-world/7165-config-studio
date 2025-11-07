@@ -1,0 +1,82 @@
+# Cloud Service Configuration
+# TOML format example
+
+# Application Configuration
+[app]
+# Application name (required)
+name = "Cloud Service"
+# Application version (required, pattern:^\d+\.\d+\.\d+$)
+version = "2.0.0"
+# Environment type (enum:development|staging|production)
+environment = "production"
+
+# Server Configuration
+[server]
+# Server hostname (required)
+host = "cloud.example.com"
+# Server port number (type:number, min:1, max:65535)
+port = 443
+# Protocol type (enum:http|https)
+protocol = "https"
+# Request timeout in seconds (type:number, min:1)
+timeout = 45
+
+# Database Configuration
+[database]
+# Database host address (required)
+host = "cloud-db.example.com"
+# Database port number (type:number, min:1, max:65535)
+port = 5432
+# Database name (required)
+database = "cloud_db"
+# Database username (required)
+username = "cloud_user"
+# Database password (required)
+password = "secure-password"
+
+# Database Connection Pool Configuration
+[database.pool]
+# Minimum pool size (type:number, min:1, max:100)
+min = 10
+# Maximum pool size (type:number, min:1, max:1000)
+max = 100
+# Idle timeout in milliseconds (type:number, min:1000)
+idle_timeout = 60000
+
+# Cache Configuration
+[cache]
+# Cache provider type (enum:redis|memcached|local)
+provider = "redis"
+# Cache server host (required)
+host = "cache.cloud.com"
+# Cache server port (type:number, min:1, max:65535)
+port = 6379
+# Time-to-live in seconds (type:number, min:1)
+ttl = 7200
+# Maximum cache size (type:number, min:1)
+max_size = 5000
+
+# Feature Flags
+[features]
+# Enable analytics (enum:true|false)
+analytics = true
+# Enable monitoring (enum:true|false)
+monitoring = true
+# Enable auto-scaling (enum:true|false)
+auto_scaling = true
+
+# Logging Configuration
+[logging]
+# Log level (enum:debug|info|warn|error)
+level = "info"
+# Log format (enum:json|text)
+format = "json"
+# Log output file path (required)
+output = "/var/log/cloud.log"
+
+# Log Rotation Configuration
+[logging.rotation]
+# Maximum log file size (required)
+max_size = "500MB"
+# Maximum number of log files to keep (type:number, min:1)
+max_files = 20

@@ -1,0 +1,27 @@
+{
+  "app": {
+    "name": "My Mobile App",
+    "version": "1.0.0",
+    "environment": "production"
+  },
+  "api": {
+    "base_url": "https://api.example.com",
+    "timeout": 30,
+    "retry_count": 3,
+    "api_key": "your-api-key-here"
+  },
+  "features": {
+    "push_notifications": true,
+    "analytics": true,
+    "crash_reporting": true
+  },
+  "ui": {
+    "theme": "dark",
+    "language": "en",
+    "font_size": 16
+  },
+  "storage": {
+    "cache_size": 100,
+    "encryption_enabled": true
+  }
+}

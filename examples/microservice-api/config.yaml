@@ -1,0 +1,63 @@
+# Microservice API Configuration
+# YAML format example
+
+# Server Configuration
+server:
+  # Server hostname (required)
+  host: api.example.com
+  # Server port number (type:number, min:1, max:65535)
+  port: 8080
+  # Request timeout in seconds (type:number, min:1)
+  timeout: 30
+  ssl:
+    # Enable SSL/TLS (enum:true|false)
+    enabled: true
+    # SSL certificate file path (required if SSL enabled)
+    certificate: /path/to/cert.pem
+
+# Database Configuration
+database:
+  # Database host address (required)
+  host: db.example.com
+  # Database port number (type:number, min:1, max:65535)
+  port: 5432
+  # Database name (required)
+  name: microservice_db
+  # Database username (required)
+  user: api_user
+  # Database password (required)
+  password: secure-password
+  pool:
+    # Minimum pool size (type:number, min:1, max:100)
+    min: 5
+    # Maximum pool size (type:number, min:1, max:1000)
+    max: 20
+    # Idle timeout in milliseconds (type:number, min:1000)
+    idle_timeout: 30000
+
+# Cache Configuration
+cache:
+  # Cache provider type (enum:redis|memcached|local)
+  provider: redis
+  # Cache server host (required)
+  host: cache.example.com
+  # Cache server port (type:number, min:1, max:65535)
+  port: 6379
+  # Time-to-live in seconds (type:number, min:1)
+  ttl: 3600
+  # Maximum cache size (type:number, min:1)
+  max_size: 1000
+
+# Logging Configuration
+logging:
+  # Log level (enum:debug|info|warn|error)
+  level: info
+  # Log format (enum:json|text)
+  format: json
+  # Log output file path (required)
+  output: /var/log/api.log
+  rotation:
+    # Maximum log file size (required)
+    max_size: 100MB
+    # Maximum number of log files to keep (type:number, min:1)
+    max_files: 10

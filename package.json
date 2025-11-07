@@ -1,14 +1,14 @@
 {
-  "name": "dotenv-studio",
+  "name": "config-studio",
   "version": "1.0.0",
-  "description": "The simplest way to visualize your .env - A beautiful web-based UI for managing .env file configuration",
-  "main": "server.js",
+  "description": "A beautiful web-based UI for managing configuration files (.env, .properties) - Config Studio",
+  "main": "src/server/index.js",
   "bin": {
-    "dotenv-studio": "./server.js"
+    "config-studio": "./src/server/index.js"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
+    "start": "node src/server/index.js",
+    "dev": "node src/server/index.js",
     "test": "node --test test/*.test.js"
   },
   "keywords": [
@@ -39,18 +39,19 @@
     "node": ">=14.0.0"
   },
   "files": [
-    "server.js",
+    "src",
     "public",
     "README.md",
     "LICENSE"
   ],
   "dependencies": {
-    "express": "^4.18.2",
+    "chokidar": "^4.0.3",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "cors": "^2.8.5"
+    "express": "^4.18.2",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/node": "^20.10.0"
   }
 }
-

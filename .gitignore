@@ -3,4 +3,8 @@ node_modules/
 .env.backup
 *.log
 .DS_Store
+.systems-registry.json
+data/
+examples/
+.config-studio.pid
 

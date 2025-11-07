@@ -6,14 +6,37 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>DotEnv Studio - .env Management</title>
+    <title>Config Studio - Configuration Management</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="settings-container">
         <div class="settings-header">
-            <h1>DotEnv Studio</h1>
-            <button class="close-btn" id="closeBtn">×</button>
+            <div class="header-brand">
+                <h1>Config Studio</h1>
+                <p class="header-tagline">The simplest way to manage configurations.</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-settings" id="systemSettingsBtn" title="System Settings">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                        <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                    </svg>
+                    <span>Settings</span>
+                </button>
+                <button class="btn btn-icon" id="manageSystemsBtn" title="Manage Systems">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                </button>
+                <button class="close-btn" id="closeBtn">×</button>
+            </div>
+        </div>
+        
+        <!-- System Tabs -->
+        <div class="system-tabs-container" id="systemTabsContainer">
+            <div class="system-tabs" id="systemTabs">
+                <!-- System tabs will be generated dynamically -->
+            </div>
         </div>
         
         <div class="settings-content">
@@ -27,6 +50,9 @@
             </div>
             
             <div class="main-content">
+                <div class="config-path-display" id="configPathDisplay">
+                    <!-- Config file path will be displayed here -->
+                </div>
                 <div class="tab-content" id="tabContent">
                     <!-- Content will be generated dynamically -->
                 </div>
@@ -34,6 +60,40 @@
                 <div class="action-buttons">
                     <button class="btn btn-cancel" id="cancelBtn">Cancel</button>
                     <button class="btn btn-save" id="saveBtn">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Management Modal -->
+    <div class="modal" id="systemModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Manage Systems</h2>
+                <button class="modal-close" id="modalCloseBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="systems-list" id="systemsList">
+                    <!-- Systems will be listed here -->
+                </div>
+                <div class="system-form" id="systemForm" style="display: none;">
+                    <h3 id="formTitle">Add System</h3>
+                    <div class="form-group">
+                        <label class="form-label">System Name</label>
+                        <input type="text" class="form-input" id="systemNameInput" placeholder="e.g., Production Server">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Config File Path</label>
+                        <input type="text" class="form-input" id="systemPathInput" placeholder="e.g., /path/to/config.env or config.env">
+                        <div class="form-helper">Relative paths are resolved from the project root. Currently supports properties-based formats (.env, .properties). Future support planned for YAML, XML, and other formats.</div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-cancel" id="cancelFormBtn">Cancel</button>
+                        <button class="btn btn-save" id="saveSystemBtn">Save</button>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-save" id="addSystemBtn">+ Add System</button>
                 </div>
             </div>
         </div>

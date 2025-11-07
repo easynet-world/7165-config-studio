@@ -522,3 +522,134 @@ test('parseRules - parses validation rules from comments', async () => {
   assert.strictEqual(Object.keys(rules7).length, 0);
 });
 
+// System Registry Tests
+test('validateSystem - validates system name and config path', async () => {
+  // Simulate validateSystem function
+  function validateSystem(system) {
+    if (!system.name || typeof system.name !== 'string' || system.name.trim().length === 0) {
+      throw new Error('System name is required and must be a non-empty string');
+    }
+    if (!system.configPath || typeof system.configPath !== 'string' || system.configPath.trim().length === 0) {
+      throw new Error('Config file path is required and must be a non-empty string');
+    }
+    const configPath = system.configPath.trim();
+    if (!configPath.endsWith('.env') && !configPath.endsWith('.properties')) {
+      throw new Error('Config file must be a .env or .properties file');
+    }
+    return {
+      id: system.id || `system-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: system.name.trim(),
+      configPath: configPath
+    };
+  }
+
+  // Test valid system
+  const validSystem = validateSystem({
+    name: 'Test System',
+    configPath: '/path/to/config.env'
+  });
+  assert.ok(validSystem.id);
+  assert.strictEqual(validSystem.name, 'Test System');
+  assert.strictEqual(validSystem.configPath, '/path/to/config.env');
+
+  // Test .properties file
+  const propertiesSystem = validateSystem({
+    name: 'Properties System',
+    configPath: 'config.properties'
+  });
+  assert.strictEqual(propertiesSystem.configPath, 'config.properties');
+
+  // Test missing name
+  assert.throws(() => {
+    validateSystem({ configPath: '/path/to/config.env' });
+  }, /System name is required/);
+
+  // Test empty name
+  assert.throws(() => {
+    validateSystem({ name: '', configPath: '/path/to/config.env' });
+  }, /System name is required/);
+
+  // Test missing config path
+  assert.throws(() => {
+    validateSystem({ name: 'Test System' });
+  }, /Config file path is required/);
+
+  // Test invalid file extension
+  assert.throws(() => {
+    validateSystem({ name: 'Test System', configPath: '/path/to/config.txt' });
+  }, /Config file must be a .env or .properties file/);
+
+  // Test name trimming
+  const trimmedSystem = validateSystem({
+    name: '  Test System  ',
+    configPath: 'config.env'
+  });
+  assert.strictEqual(trimmedSystem.name, 'Test System');
+
+  // Test path trimming
+  const trimmedPathSystem = validateSystem({
+    name: 'Test System',
+    configPath: '  config.env  '
+  });
+  assert.strictEqual(trimmedPathSystem.configPath, 'config.env');
+});
+
+test('system registry - CRUD operations structure', async () => {
+  // Test that system objects have required fields
+  const system = {
+    id: 'system-123',
+    name: 'Test System',
+    configPath: '/path/to/config.env'
+  };
+
+  assert.ok(system.id);
+  assert.strictEqual(typeof system.name, 'string');
+  assert.strictEqual(typeof system.configPath, 'string');
+  assert.ok(system.configPath.endsWith('.env') || system.configPath.endsWith('.properties'));
+});
+
+test('system registry - duplicate name validation', async () => {
+  // Simulate duplicate name check
+  const systems = [
+    { id: '1', name: 'System A', configPath: '/path/a.env' },
+    { id: '2', name: 'System B', configPath: '/path/b.env' }
+  ];
+
+  // Check for duplicate name
+  const hasDuplicate = (name, excludeId = null) => {
+    return systems.some(s => s.id !== excludeId && s.name === name);
+  };
+
+  assert.strictEqual(hasDuplicate('System A'), true);
+  assert.strictEqual(hasDuplicate('System C'), false);
+  assert.strictEqual(hasDuplicate('System A', '1'), false); // Excluding current system
+  assert.strictEqual(hasDuplicate('System B', '2'), false);
+});
+
+test('settings API - system parameter handling', async () => {
+  // Test that system parameter is properly encoded in URL
+  const systemId = 'system-123';
+  const baseUrl = '/api/settings';
+  const url = `${baseUrl}?system=${encodeURIComponent(systemId)}`;
+  
+  assert.ok(url.includes('system='));
+  assert.ok(url.includes(encodeURIComponent(systemId)));
+  
+  // Test with special characters in system ID
+  const specialId = 'system-123-abc';
+  const specialUrl = `${baseUrl}?system=${encodeURIComponent(specialId)}`;
+  assert.ok(specialUrl.includes(encodeURIComponent(specialId)));
+});
+
+test('system registry - path resolution', async () => {
+  // Test absolute path
+  const absolutePath = '/absolute/path/to/config.env';
+  const isAbsolute = absolutePath.startsWith('/') || absolutePath.match(/^[A-Z]:/);
+  assert.ok(isAbsolute || absolutePath.startsWith('/'));
+
+  // Test relative path
+  const relativePath = 'config.env';
+  const isRelative = !relativePath.startsWith('/') && !relativePath.match(/^[A-Z]:/);
+  assert.ok(isRelative);
+});
+

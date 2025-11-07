@@ -84,13 +84,122 @@ class SettingsApp {
         this.currentTab = null;
         this.hasChanges = false;
         this.searchQuery = '';
+        this.systems = [];
+        this.currentSystemId = null;
+        this.currentSystem = null; // Store current system object for path display
+        this.systemSettingsId = null; // ID of "System Settings" system
+        this.editingSystemId = null;
+        this.rawMode = false;
+        this.rawContent = '';
+        this.originalRawContent = '';
         
         this.init();
     }
 
     async init() {
         this.setupEventListeners();
-        await this.loadSettings();
+        // Load systems first, then settings (which will auto-select first system if needed)
+        await this.loadSystems();
+        // loadSettings will be called automatically if a system is auto-selected in renderSystemSelector
+        // But we also need to call it here if a system was already selected or auto-selected
+        if (this.currentSystemId || this.systems.length > 0) {
+            if (!this.currentSystemId) {
+                // Auto-select System Settings if available, otherwise first system
+                if (this.systemSettingsId) {
+                    this.currentSystemId = this.systemSettingsId;
+                    // Load all systems to get System Settings
+                    const response = await fetch('/api/systems');
+                    if (response.ok) {
+                        const allSystems = await response.json();
+                        this.currentSystem = allSystems.find(s => s.id === this.systemSettingsId);
+                    }
+                    this.updateSystemSettingsButton();
+                } else if (this.systems.length > 0) {
+                    this.currentSystemId = this.systems[0].id;
+                    this.currentSystem = this.systems[0];
+                    this.renderSystemSelector(); // Update tabs to show active state
+                }
+            }
+            // Update path display before loading settings
+            this.updateConfigPathDisplay();
+            // Always load fresh settings from file on page load
+            await this.loadSettings();
+        }
+        
+        // Setup WebSocket connection for real-time file change notifications
+        this.setupWebSocket();
+        
+        // Reload settings when page becomes visible again (user switches back to tab)
+        // This ensures we always show the most recent configuration from file
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.currentSystemId) {
+                // Page became visible - reload fresh settings from file
+                this.loadSettings();
+            }
+        });
+    }
+
+    setupWebSocket() {
+        // Determine WebSocket URL based on current page location
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}`;
+        
+        try {
+            this.ws = new WebSocket(wsUrl);
+            
+            this.ws.onopen = () => {
+                console.log('WebSocket connected - receiving real-time file change notifications');
+            };
+            
+            this.ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    
+                    if (message.type === 'connected') {
+                        console.log('WebSocket:', message.message);
+                        return;
+                    }
+                    
+                    if (message.type === 'file-changed') {
+                        // File changed - reload if it's the current system
+                        if (message.systemId === this.currentSystemId) {
+                            console.log('Config file changed - reloading settings...');
+                            this.showSuccess('Configuration file was updated. Reloading...');
+                            // Reload settings from file
+                            this.loadSettings();
+                        } else {
+                            // Another system's file changed - just show notification
+                            const system = this.systems.find(s => s.id === message.systemId);
+                            if (system) {
+                                console.log(`Config file changed for ${system.name}`);
+                            }
+                        }
+                    } else if (message.type === 'registry-changed') {
+                        // Registry changed - reload systems list
+                        console.log('Systems registry changed - reloading systems...');
+                        this.loadSystems();
+                    }
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+            
+            this.ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            this.ws.onclose = () => {
+                console.log('WebSocket disconnected. Attempting to reconnect...');
+                // Attempt to reconnect after 3 seconds
+                setTimeout(() => {
+                    if (this.ws.readyState === WebSocket.CLOSED) {
+                        this.setupWebSocket();
+                    }
+                }, 3000);
+            };
+        } catch (error) {
+            console.error('Failed to setup WebSocket:', error);
+        }
     }
 
     setupEventListeners() {
@@ -106,6 +215,41 @@ class SettingsApp {
 
         document.getElementById('saveBtn').addEventListener('click', () => {
             this.saveSettings();
+        });
+
+        // System tab switching is handled in renderSystemSelector() via click events
+
+        // System Settings button (separate from other systems)
+        document.getElementById('systemSettingsBtn').addEventListener('click', () => {
+            this.openSystemSettings();
+        });
+
+        // System management modal
+        document.getElementById('manageSystemsBtn').addEventListener('click', () => {
+            this.openSystemModal();
+        });
+
+        document.getElementById('modalCloseBtn').addEventListener('click', () => {
+            this.closeSystemModal();
+        });
+
+        document.getElementById('addSystemBtn').addEventListener('click', () => {
+            this.showSystemForm();
+        });
+
+        document.getElementById('cancelFormBtn').addEventListener('click', () => {
+            this.hideSystemForm();
+        });
+
+        document.getElementById('saveSystemBtn').addEventListener('click', () => {
+            this.saveSystem();
+        });
+
+        // Close modal on background click
+        document.getElementById('systemModal').addEventListener('click', (e) => {
+            if (e.target.id === 'systemModal') {
+                this.closeSystemModal();
+            }
         });
 
         // Real-time search
@@ -131,35 +275,318 @@ class SettingsApp {
         });
     }
 
-    async loadSettings() {
+    async loadSystems() {
         try {
-            // Always fetch fresh data with cache-busting timestamp
-            const response = await fetch(`/api/settings?t=${Date.now()}`, {
-                cache: 'no-store',
-                headers: {
-                    'Cache-Control': 'no-cache'
+            const response = await fetch('/api/systems');
+            if (!response.ok) throw new Error('Failed to load systems');
+            const allSystems = await response.json();
+            
+            // Separate System Settings from other systems
+            this.systemSettingsId = allSystems.find(s => s.name === 'System Settings')?.id || null;
+            this.systems = allSystems.filter(s => s.name !== 'System Settings');
+            
+            // Update current system if it's still selected
+            if (this.currentSystemId) {
+                this.currentSystem = allSystems.find(s => s.id === this.currentSystemId);
+                this.updateConfigPathDisplay();
+            }
+            
+            this.renderSystemSelector();
+            this.updateSystemSettingsButton();
+        } catch (error) {
+            console.error('Error loading systems:', error);
+            this.systems = [];
+            this.systemSettingsId = null;
+            this.currentSystem = null;
+            this.renderSystemSelector();
+            this.updateSystemSettingsButton();
+            this.updateConfigPathDisplay();
+        }
+    }
+
+    /**
+     * Update the config file path display
+     */
+    updateConfigPathDisplay() {
+        const pathDisplay = document.getElementById('configPathDisplay');
+        if (!pathDisplay) return;
+        
+        if (this.currentSystem && this.currentSystem.configPath) {
+            pathDisplay.innerHTML = `
+                <div class="config-path-content">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" class="config-path-icon">
+                        <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
+                    </svg>
+                    <span class="config-path-label">Config File:</span>
+                    <span class="config-path-value" title="${this.escapeHtml(this.currentSystem.configPath)}">${this.escapeHtml(this.currentSystem.configPath)}</span>
+                </div>
+            `;
+            pathDisplay.style.display = 'block';
+        } else {
+            pathDisplay.style.display = 'none';
+        }
+    }
+
+    renderSystemSelector() {
+        const tabsContainer = document.getElementById('systemTabs');
+        tabsContainer.innerHTML = '';
+        
+        // Filter out System Settings - it's handled separately via Settings button
+        const regularSystems = this.systems.filter(s => s.name !== 'System Settings');
+        
+        // If no systems, show placeholder
+        if (regularSystems.length === 0) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'system-tab-placeholder';
+            placeholder.textContent = 'No systems registered';
+            tabsContainer.appendChild(placeholder);
+            return;
+        }
+        
+        // Add all registered systems as tabs (excluding System Settings)
+        regularSystems.forEach(system => {
+            const tab = document.createElement('div');
+            tab.className = 'system-tab';
+            tab.dataset.systemId = system.id;
+            
+            if (system.id === this.currentSystemId) {
+                tab.classList.add('active');
+            }
+            
+            // Show format indicator for unsupported formats
+            const formatIndicator = system.formatSupported === false 
+                ? '<span class="system-tab-badge" title="Raw editing mode">📄</span>' 
+                : '';
+            
+            tab.innerHTML = `
+                <span class="system-tab-name">${this.escapeHtml(system.name)}</span>
+                ${formatIndicator}
+            `;
+            
+            tab.addEventListener('click', () => {
+                if (system.id !== this.currentSystemId) {
+                    // Check for unsaved changes
+                    if (this.hasChanges) {
+                        if (!confirm('You have unsaved changes. Switch system anyway?')) {
+                            return;
+                        }
+                    }
+                    
+                    // Completely reset state before switching
+                    this.resetStateForSystemSwitch();
+                    
+                    this.currentSystemId = system.id;
+                    this.currentSystem = system;
+                    this.updateConfigPathDisplay();
+                    this.loadSettings();
+                    this.renderSystemSelector(); // Re-render to update active state
                 }
             });
-            if (!response.ok) throw new Error('Failed to load settings');
+            
+            tabsContainer.appendChild(tab);
+        });
+    }
+
+    /**
+     * Open System Settings (separate from other systems)
+     */
+    async openSystemSettings() {
+        if (!this.systemSettingsId) {
+            this.showError('System Settings not found. Please ensure the default .env file is registered.');
+            return;
+        }
+        
+        // Check for unsaved changes
+        if (this.hasChanges) {
+            if (!confirm('You have unsaved changes. Switch to System Settings anyway?')) {
+                return;
+            }
+        }
+        
+        // Completely reset state before switching
+        this.resetStateForSystemSwitch();
+        
+        this.currentSystemId = this.systemSettingsId;
+        // Load all systems to get System Settings
+        const response = await fetch('/api/systems');
+        if (response.ok) {
+            const allSystems = await response.json();
+            this.currentSystem = allSystems.find(s => s.id === this.systemSettingsId);
+        }
+        this.updateConfigPathDisplay();
+        await this.loadSettings();
+        this.updateSystemSettingsButton();
+    }
+
+    /**
+     * Update System Settings button state
+     */
+    updateSystemSettingsButton() {
+        const settingsBtn = document.getElementById('systemSettingsBtn');
+        if (!settingsBtn) return;
+        
+        if (this.currentSystemId === this.systemSettingsId) {
+            settingsBtn.classList.add('active');
+        } else {
+            settingsBtn.classList.remove('active');
+        }
+    }
+
+    /**
+     * Reset all state when switching systems to ensure complete isolation
+     */
+    resetStateForSystemSwitch() {
+        // Clear all settings data
+        this.settings = {};
+        this.sectionOrder = [];
+        this.originalSettings = {};
+        
+        // Reset UI state
+        this.currentTab = null;
+        this.hasChanges = false;
+        this.searchQuery = '';
+        
+        // Reset raw mode state
+        this.rawMode = false;
+        this.rawContent = '';
+        this.originalRawContent = '';
+        
+        // Clear the UI immediately to show loading state
+        const tabContent = document.getElementById('tabContent');
+        const navMenu = document.getElementById('navMenu');
+        if (tabContent) {
+            tabContent.innerHTML = '<div class="loading">Loading settings...</div>';
+        }
+        if (navMenu) {
+            navMenu.innerHTML = '';
+        }
+    }
+
+    async loadSettings() {
+        try {
+            // Require a system to be selected
+            if (!this.currentSystemId) {
+                // If no system selected but systems exist, select the first one
+                if (this.systems.length > 0) {
+                    this.currentSystemId = this.systems[0].id;
+                    this.currentSystem = this.systems[0];
+                    this.updateConfigPathDisplay();
+                    this.renderSystemSelector(); // Update tabs to show active state
+                } else {
+                    // No systems registered yet
+                    this.settings = {};
+                    this.sectionOrder = [];
+                    this.originalSettings = {};
+                    this.render();
+                    return;
+                }
+            }
+            
+            // Build URL with system parameter (always required now)
+            // Always use timestamp to ensure we get fresh data from file (no browser cache)
+            const url = `/api/settings?t=${Date.now()}&system=${encodeURIComponent(this.currentSystemId)}`;
+            
+            // Always fetch fresh data from file - no caching
+            // The server always reads from file system, and we prevent browser caching
+            const response = await fetch(url, {
+                cache: 'no-store', // Don't store in cache
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+            
+            if (!response.ok) {
+                // Try to get error message from response
+                let errorMessage = 'Failed to load settings';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorMessage;
+                } catch (e) {
+                    // If response is not JSON, use status text
+                    errorMessage = response.statusText || errorMessage;
+                }
+                throw new Error(errorMessage);
+            }
             
             const data = await response.json();
+            
+            // Check if this is raw mode (unsupported format)
+            if (data.raw === true) {
+                this.rawMode = true;
+                this.rawContent = data.content || '';
+                this.originalRawContent = this.rawContent;
+                this.settings = {};
+                this.sectionOrder = [];
+                this.originalSettings = {};
+                this.currentTab = null; // Reset tab when switching to raw mode
+                this.hasChanges = false;
+                this.render();
+                return;
+            }
+            
+            // Handle structured format
+            this.rawMode = false;
+            // Reset current tab when loading new system
+            this.currentTab = null;
             // Handle both old format (just sections) and new format (sections + sectionOrder)
             this.settings = data.sections || data;
             this.sectionOrder = data.sectionOrder || Object.keys(this.settings).sort();
             this.originalSettings = JSON.parse(JSON.stringify(this.settings));
+            this.hasChanges = false; // Reset changes flag when loading new system
+            this.updateSystemSettingsButton(); // Update settings button state
             this.render();
         } catch (error) {
             console.error('Error loading settings:', error);
-            this.showError('Failed to load settings. Please check if .env file exists.');
+            // Check if it's a network error or API error
+            if (error.message && error.message.includes('Failed to load settings')) {
+                // Try to get more details from the response if available
+                this.showError('Failed to load settings. The config file may not exist or may be inaccessible.');
+            } else {
+                this.showError(`Failed to load settings: ${error.message || 'Unknown error'}`);
+            }
+            // Show empty state instead of error if file doesn't exist
+            this.settings = {};
+            this.sectionOrder = [];
+            this.originalSettings = {};
+            this.render();
         }
     }
 
     render() {
+        // Always clear and rebuild - ensure no state leakage
         this.renderNav();
         this.renderContent();
         
+        // Show message if no settings available
+        if (Object.keys(this.settings).length === 0 && this.currentSystemId && !this.rawMode) {
+            const tabContent = document.getElementById('tabContent');
+            // Remove any existing content first
+            const existingEmptyState = tabContent.querySelector('.empty-state');
+            if (existingEmptyState) {
+                existingEmptyState.remove();
+            }
+            const existingRawEditor = tabContent.querySelector('.raw-editor-container');
+            if (existingRawEditor) {
+                existingRawEditor.remove();
+            }
+            
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-state';
+            emptyState.innerHTML = `
+                <div class="empty-state-content">
+                    <h3>No Configuration Settings</h3>
+                    <p>The config file exists but contains no settings, or the file is empty.</p>
+                    <p>You can add settings by editing the config file directly, or wait for settings to be added.</p>
+                </div>
+            `;
+            tabContent.appendChild(emptyState);
+        }
+        
         // Activate first tab if none is active (considering search filter)
-        if (!this.currentTab && this.sectionOrder.length > 0) {
+        // Only do this for structured mode (not raw mode)
+        if (!this.rawMode && !this.currentTab && this.sectionOrder.length > 0) {
             const firstVisibleTab = this.searchQuery 
                 ? this.sectionOrder.find(sectionName => this.sectionMatchesSearch(sectionName))
                 : this.sectionOrder[0];
@@ -171,7 +598,15 @@ class SettingsApp {
 
     renderNav() {
         const navMenu = document.getElementById('navMenu');
+        if (!navMenu) return;
+        
+        // Completely clear navigation - ensure no state leakage
         navMenu.innerHTML = '';
+        
+        // Don't render nav in raw mode
+        if (this.rawMode) {
+            return;
+        }
 
         // Use sectionOrder to preserve order from .env file
         this.sectionOrder.forEach(sectionName => {
@@ -197,10 +632,50 @@ class SettingsApp {
 
     renderContent() {
         const tabContent = document.getElementById('tabContent');
+        if (!tabContent) return;
+        
+        // Completely clear all content first - ensure no state leakage
         tabContent.innerHTML = '';
 
+        // Render raw mode for unsupported formats
+        if (this.rawMode) {
+            const rawEditor = document.createElement('div');
+            rawEditor.className = 'raw-editor-container';
+            rawEditor.innerHTML = `
+                <div class="raw-editor-header">
+                    <h3>Raw File Editor</h3>
+                    <p class="raw-editor-info">This configuration file format is not yet supported for structured editing. You can edit the file content directly below.</p>
+                </div>
+                <textarea id="rawContentTextarea" class="raw-content-textarea" spellcheck="false">${this.escapeHtml(this.rawContent)}</textarea>
+            `;
+            tabContent.appendChild(rawEditor);
+            
+            // Add event listener for textarea changes
+            const textarea = document.getElementById('rawContentTextarea');
+            textarea.addEventListener('input', () => {
+                this.rawContent = textarea.value;
+                this.hasChanges = (this.rawContent !== this.originalRawContent);
+                this.updateSaveButton();
+            });
+            return;
+        }
+
         if (Object.keys(this.settings).length === 0) {
-            tabContent.innerHTML = '<div class="loading">No settings found. Please create a .env file.</div>';
+            // Don't show error if we have a system selected - it might just be empty
+            if (this.currentSystemId) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'empty-state';
+                emptyState.innerHTML = `
+                    <div class="empty-state-content">
+                        <h3>No Configuration Settings</h3>
+                        <p>The config file exists but contains no settings, or the file is empty.</p>
+                        <p>You can add settings by editing the config file directly.</p>
+                    </div>
+                `;
+                tabContent.appendChild(emptyState);
+            } else {
+                tabContent.innerHTML = '<div class="loading">No settings found. Please select a system or create a config file.</div>';
+            }
             return;
         }
 
@@ -596,6 +1071,14 @@ class SettingsApp {
     }
 
     resetChanges() {
+        if (this.rawMode) {
+            this.rawContent = this.originalRawContent;
+            this.hasChanges = false;
+            this.render();
+            this.updateSaveButton();
+            return;
+        }
+        
         this.settings = JSON.parse(JSON.stringify(this.originalSettings));
         this.hasChanges = false;
         // Preserve search query when resetting
@@ -607,7 +1090,45 @@ class SettingsApp {
     }
 
     async saveSettings() {
-        // Validate all fields before saving
+        // System is always required now
+        if (!this.currentSystemId) {
+            this.showError('No system selected. Please select a system first.');
+            return;
+        }
+        
+        // Handle raw mode saving
+        if (this.rawMode) {
+            try {
+                const url = `/api/settings?system=${encodeURIComponent(this.currentSystemId)}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        raw: true,
+                        content: this.rawContent
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to save settings');
+                }
+
+                const result = await response.json();
+                this.originalRawContent = this.rawContent;
+                this.hasChanges = false;
+                this.updateSaveButton();
+                this.showSuccess(result.message || 'Settings saved successfully!');
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                this.showError(error.message || 'Failed to save settings. Please try again.');
+            }
+            return;
+        }
+        
+        // Validate all fields before saving (structured mode)
         const inputs = document.querySelectorAll('.form-input');
         let isValid = true;
         
@@ -629,7 +1150,10 @@ class SettingsApp {
                 sectionOrder: this.sectionOrder
             };
             
-            const response = await fetch('/api/settings', {
+            // Build URL with system parameter (always required)
+            const url = `/api/settings?system=${encodeURIComponent(this.currentSystemId)}`;
+            
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -637,7 +1161,10 @@ class SettingsApp {
                 body: JSON.stringify(dataToSave)
             });
 
-            if (!response.ok) throw new Error('Failed to save settings');
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to save settings');
+            }
 
             const result = await response.json();
             
@@ -653,7 +1180,7 @@ class SettingsApp {
 
             this.showSuccess('Settings saved successfully!');
             
-            // Reload settings to ensure we have the latest from .env file
+            // Reload settings to ensure we have the latest from config file
             setTimeout(() => {
                 this.loadSettings();
             }, 500);
@@ -661,6 +1188,231 @@ class SettingsApp {
             console.error('Error saving settings:', error);
             this.showError('Failed to save settings. Please try again.');
         }
+    }
+
+    // System Management Methods
+    openSystemModal() {
+        document.getElementById('systemModal').classList.add('active');
+        this.renderSystemsList();
+        this.hideSystemForm();
+    }
+
+    closeSystemModal() {
+        document.getElementById('systemModal').classList.remove('active');
+        this.hideSystemForm();
+        this.editingSystemId = null;
+    }
+
+    renderSystemsList() {
+        const list = document.getElementById('systemsList');
+        list.innerHTML = '';
+        
+        // Filter out System Settings - it's managed separately
+        const regularSystems = this.systems.filter(s => s.name !== 'System Settings');
+        
+        if (regularSystems.length === 0) {
+            list.innerHTML = '<div class="loading">No systems registered. Click "Add System" to register one.</div>';
+            return;
+        }
+        
+        regularSystems.forEach(system => {
+            const item = document.createElement('div');
+            item.className = 'system-item';
+            item.innerHTML = `
+                <div class="system-item-info">
+                    <div class="system-item-name">${this.escapeHtml(system.name)}</div>
+                    <div class="system-item-path">${this.escapeHtml(system.configPath)}</div>
+                </div>
+                <div class="system-item-actions">
+                    <button class="btn btn-small btn-cancel edit-system-btn" data-id="${system.id}">Edit</button>
+                    <button class="btn btn-small btn-danger delete-system-btn" data-id="${system.id}">Delete</button>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+        
+        // Add event listeners
+        list.querySelectorAll('.edit-system-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const systemId = e.target.dataset.id;
+                this.editSystem(systemId);
+            });
+        });
+        
+        list.querySelectorAll('.delete-system-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const systemId = e.target.dataset.id;
+                this.deleteSystem(systemId);
+            });
+        });
+    }
+
+    showSystemForm(system = null) {
+        const form = document.getElementById('systemForm');
+        const formTitle = document.getElementById('formTitle');
+        const nameInput = document.getElementById('systemNameInput');
+        const pathInput = document.getElementById('systemPathInput');
+        
+        if (system) {
+            formTitle.textContent = 'Edit System';
+            nameInput.value = system.name;
+            pathInput.value = system.configPath;
+            this.editingSystemId = system.id;
+        } else {
+            formTitle.textContent = 'Add System';
+            nameInput.value = '';
+            pathInput.value = '';
+            this.editingSystemId = null;
+        }
+        
+        form.style.display = 'block';
+        document.getElementById('addSystemBtn').style.display = 'none';
+    }
+
+    hideSystemForm() {
+        document.getElementById('systemForm').style.display = 'none';
+        document.getElementById('addSystemBtn').style.display = 'block';
+        document.getElementById('systemNameInput').value = '';
+        document.getElementById('systemPathInput').value = '';
+        this.editingSystemId = null;
+    }
+
+    editSystem(systemId) {
+        // Don't allow editing System Settings through the modal
+        if (systemId === this.systemSettingsId) {
+            this.showError('System Settings cannot be edited through this interface.');
+            return;
+        }
+        
+        const system = this.systems.find(s => s.id === systemId);
+        if (system) {
+            this.showSystemForm(system);
+        }
+    }
+
+    async saveSystem() {
+        const nameInput = document.getElementById('systemNameInput');
+        const pathInput = document.getElementById('systemPathInput');
+        
+        const name = nameInput.value.trim();
+        const configPath = pathInput.value.trim();
+        
+        if (!name) {
+            this.showError('System name is required.');
+            return;
+        }
+        
+        if (!configPath) {
+            this.showError('Config file path is required.');
+            return;
+        }
+        
+        // Validate file extension (client-side check - server will do full validation)
+        // Currently only properties-based formats are supported
+        const validExtensions = ['.env', '.properties'];
+        const hasValidExtension = validExtensions.some(ext => configPath.toLowerCase().endsWith(ext));
+        if (!hasValidExtension) {
+            this.showError(`Config file must be a properties-based format (${validExtensions.join(', ')})`);
+            return;
+        }
+        
+        try {
+            let response;
+            if (this.editingSystemId) {
+                // Update existing system
+                response = await fetch(`/api/systems/${this.editingSystemId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, configPath })
+                });
+            } else {
+                // Create new system
+                response = await fetch('/api/systems', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, configPath })
+                });
+            }
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to save system');
+            }
+            
+            await this.loadSystems();
+            this.renderSystemsList();
+            this.hideSystemForm();
+            this.showSuccess('System saved successfully!');
+            // Refresh the system tabs in the main UI
+            this.renderSystemSelector();
+            this.updateSystemSettingsButton();
+        } catch (error) {
+            console.error('Error saving system:', error);
+            this.showError(error.message || 'Failed to save system. Please try again.');
+        }
+    }
+
+    async deleteSystem(systemId) {
+        // Don't allow deleting System Settings
+        if (systemId === this.systemSettingsId) {
+            this.showError('System Settings cannot be deleted.');
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to delete this system? This will not delete the config file.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/systems/${systemId}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) throw new Error('Failed to delete system');
+            
+            // If deleted system was currently selected, switch to System Settings or first available system
+            if (this.currentSystemId === systemId) {
+                await this.loadSystems();
+                if (this.systemSettingsId) {
+                    // Switch to System Settings
+                    this.currentSystemId = this.systemSettingsId;
+                    this.updateSystemSettingsButton();
+                    await this.loadSettings();
+                } else if (this.systems.length > 0) {
+                    this.currentSystemId = this.systems[0].id;
+                    this.renderSystemSelector(); // Update tabs
+                    this.updateSystemSettingsButton();
+                    await this.loadSettings();
+                } else {
+                    this.currentSystemId = null;
+                    this.settings = {};
+                    this.sectionOrder = [];
+                    this.originalSettings = {};
+                    this.renderSystemSelector(); // Update tabs
+                    this.updateSystemSettingsButton();
+                    this.render();
+                }
+            } else {
+                await this.loadSystems();
+            }
+            this.renderSystemsList();
+            this.renderSystemSelector(); // Update tabs after deletion
+            this.updateSystemSettingsButton();
+            this.showSuccess('System deleted successfully!');
+        } catch (error) {
+            console.error('Error deleting system:', error);
+            this.showError('Failed to delete system. Please try again.');
+        }
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     showError(message) {

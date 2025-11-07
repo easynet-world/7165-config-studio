@@ -1,28 +1,28 @@
-# DotEnv Studio
+# Config Studio
 
-> **The simplest way to visualize your .env**
+> **A beautiful web-based UI for managing configuration files**
 
-![DotEnv Studio](public/images/dotenv-studio.png)
+Config Studio is a modern, web-based configuration management tool that provides an intuitive interface for editing and managing configuration files across multiple systems and formats.
 
 ## Quick Start
 
 | Step | Command |
 |------|---------|
-| **1. Install** | `npm install -g dotenv-studio` |
+| **1. Install** | `npm install -g config-studio` |
 | **2. Navigate** | `cd /path/to/your/project` |
-| **3. Start** | `dotenv-studio` |
+| **3. Start** | `config-studio` |
 | **4. Open** | `http://localhost:8880` |
 
-That's it! Your `.env` file will appear in the browser.
+That's it! Your configuration files will appear in the browser.
 
 ## Examples
 
 | Scenario | Command |
 |---------|---------|
-| **Basic usage** | `npm install -g dotenv-studio`<br>`cd ~/my-project`<br>`dotenv-studio` |
-| **Custom port** | `dotenv-studio --port 3000` |
-| **Local install** | `npm install dotenv-studio`<br>`npx dotenv-studio` |
-| **Environment port** | `DOTENV_UI_PORT=8080 dotenv-studio` |
+| **Basic usage** | `npm install -g config-studio`<br>`cd ~/my-project`<br>`config-studio` |
+| **Custom port** | `config-studio --port 3000` |
+| **Local install** | `npm install config-studio`<br>`npx config-studio` |
+| **Environment port** | `DOTENV_UI_PORT=8080 config-studio` |
 
 ## How It Works
 
@@ -87,6 +87,41 @@ ENV=dev
 | **Validation** | Validates inputs with custom rules |
 | **Backup** | Creates backup before saving |
 | **Live Updates** | Automatically reloads when `.env` changes |
+| **Multiple Configs** | Manage multiple `.env` and `.properties` files for different systems |
+
+## Multiple Config Files
+
+Config Studio supports managing multiple config files for different systems. Each system can have its own `.env` or `.properties` file.
+
+### Registering a System
+
+1. Click the **"+"** button next to the system selector in the header
+2. Enter a system name (e.g., "Production Server", "Development")
+3. Enter the config file path (e.g., `/path/to/production.env` or `config.properties`)
+4. Click **"Save"**
+
+The config file path can be:
+- **Absolute path**: `/absolute/path/to/config.env`
+- **Relative path**: `config.env` (resolved from project root)
+
+**Supported Formats:**
+- Currently only **properties-based formats** are supported: `.env`, `.properties`
+- Future support planned for: YAML, XML, JSON, and other configuration formats
+- The system uses an extensible format handler architecture, making it easy to add new formats
+
+### Managing Systems
+
+- **Switch systems**: Use the dropdown selector in the header
+- **Edit system**: Click "Manage Systems" → Click "Edit" on a system
+- **Delete system**: Click "Manage Systems" → Click "Delete" on a system
+
+> **Note**: Deleting a system from the registry does not delete the actual config file.
+
+### Default System
+
+Config Studio automatically registers itself on startup, pointing to the default `.env` file in the project root. This system is named "Config Studio" and will appear in the system selector.
+
+When no system is selected in the UI, Config Studio uses the default `.env` file in the project root.
 
 ## Common Tasks
 
@@ -96,6 +131,8 @@ ENV=dev
 | **Edit settings** | Click field → Change value → Click "Save Settings" |
 | **Search settings** | Type in search box (top left) → Results filter instantly |
 | **Add new setting** | Edit `.env` file directly |
+| **Register system** | Click "+" button → Enter name and path → Save |
+| **Switch systems** | Use dropdown selector in header |
 
 ## Configuration
 
@@ -103,9 +140,34 @@ ENV=dev
 
 | Method | Command | Port |
 |--------|---------|------|
-| **Default** | `dotenv-studio` | 8880 |
-| **Command-line** | `dotenv-studio --port 8080` | 8080 |
-| **Environment** | `DOTENV_UI_PORT=8080 dotenv-studio` | 8080 |
+| **Default** | `config-studio` | 8880 |
+| **Command-line** | `config-studio --port 8080` | 8080 |
+| **Environment** | `DOTENV_UI_PORT=8080 config-studio` | 8080 |
+
+### Startup Config Registration
+
+You can register a config file automatically when starting the server:
+
+| Method | Command | Description |
+|--------|---------|-------------|
+| **Environment** | `CONFIG_STUDIO_CONFIG_PATH=/path/to/config.env config-studio` | Register config file on startup |
+| **With name** | `CONFIG_STUDIO_CONFIG_PATH=/path/to/config.env CONFIG_STUDIO_SYSTEM_NAME="My System" config-studio` | Register with custom name |
+| **Command line** | `config-studio --config /path/to/config.env` | Register via command line |
+| **Command line with name** | `config-studio --config /path/to/config.env --name "My System"` | Register with custom name |
+
+**Note:** All config file paths are automatically converted to absolute paths. If a system with the same path already exists, it won't be registered again.
+
+### Data Directory
+
+The systems registry is stored in a `data` folder by default. You can configure a custom location:
+
+| Method | Command | Location |
+|--------|---------|----------|
+| **Default** | `config-studio` | `./data/systems-registry.json` |
+| **Environment (relative)** | `DOTENV_UI_DATA_DIR=custom-data config-studio` | `./custom-data/systems-registry.json` |
+| **Environment (absolute)** | `DOTENV_UI_DATA_DIR=/var/lib/config-studio config-studio` | `/var/lib/config-studio/systems-registry.json` |
+
+The data directory is automatically created if it doesn't exist.
 
 ### Working Directory
 
@@ -118,19 +180,19 @@ ENV=dev
 ```bash
 # Correct
 cd ~/my-project
-dotenv-studio
+config-studio
 
 # Wrong
 cd ~
-dotenv-studio  # Won't find .env in ~/my-project
+config-studio  # Won't find .env in ~/my-project
 ```
 
 ## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
-| **Command not found** | Run `npm install -g dotenv-studio` |
-| **Port already in use** | Use `dotenv-studio --port 8080` |
+| **Command not found** | Run `npm install -g config-studio` |
+| **Port already in use** | Use `config-studio --port 8080` |
 | **Can't find .env** | Make sure you're in the project directory |
 | **Settings not saving** | Check `.env` file permissions |
 | **Tabs not showing** | Add empty lines between sections in `.env` |
@@ -171,9 +233,56 @@ ENVIRONMENT=dev
 
 | Method | Command | Use Case |
 |--------|---------|----------|
-| **Global** | `npm install -g dotenv-studio`<br>`dotenv-studio` | Use from anywhere |
-| **Local** | `npm install dotenv-studio`<br>`npx dotenv-studio` | Project-specific |
+| **Global** | `npm install -g config-studio`<br>`config-studio` | Use from anywhere |
+| **Local** | `npm install config-studio`<br>`npx config-studio` | Project-specific |
 | **Source** | `git clone ...`<br>`npm install`<br>`npm start` | Development |
+
+## Process Management Scripts
+
+For easier process management, use the provided shell scripts:
+
+### Start Script (`start.sh`)
+
+Starts Config Studio and manages the process:
+
+```bash
+./start.sh [options]
+```
+
+**Features:**
+- Automatically kills any existing `config-studio` processes
+- Sets process name to "config-studio" for easy identification
+- Saves PID to `.config-studio.pid`
+- Supports all command-line options (e.g., `./start.sh --port 8080`)
+
+**Example:**
+```bash
+./start.sh --port 3000
+```
+
+### Stop Script (`stop.sh`)
+
+Stops all Config Studio processes:
+
+```bash
+./stop.sh
+```
+
+**Features:**
+- Finds and stops all processes named "config-studio"
+- Graceful shutdown (SIGTERM) followed by force kill if needed
+- Cleans up PID file
+
+**Example:**
+```bash
+./stop.sh
+```
+
+### Process Name
+
+All processes are named "config-studio" for easy identification:
+- View processes: `ps aux | grep config-studio`
+- Check if running: `pgrep -f config-studio`
 
 ## License
 

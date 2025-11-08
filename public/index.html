@@ -267,27 +267,32 @@
                 <button class="modal-close" id="modalCloseBtn">×</button>
             </div>
             <div class="modal-body">
-                <div class="systems-list" id="systemsList">
-                    <!-- Systems will be listed here -->
+                <div class="system-form-container">
+                    <div class="system-form" id="systemForm" style="display: none;">
+                        <h3 id="formTitle">Add System</h3>
+                        <div class="form-group">
+                            <label class="form-label">System Name</label>
+                            <input type="text" class="form-input" id="systemNameInput" placeholder="e.g., Production Server">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Config File Path</label>
+                            <input type="text" class="form-input" id="systemPathInput" placeholder="e.g., /path/to/config.env or config.env">
+                            <div class="form-helper">Relative paths are resolved from the project root. Currently supports properties-based formats (.env, .properties). Future support planned for YAML, XML, and other formats.</div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-cancel" id="cancelFormBtn">Cancel</button>
+                            <button class="btn btn-save" id="saveSystemBtn">Save</button>
+                        </div>
+                    </div>
+                    <div class="system-form-toggle" id="addSystemBtnContainer">
+                        <button class="btn btn-save" id="addSystemBtn">+ Add System</button>
+                    </div>
                 </div>
-                <div class="system-form" id="systemForm" style="display: none;">
-                    <h3 id="formTitle">Add System</h3>
-                    <div class="form-group">
-                        <label class="form-label">System Name</label>
-                        <input type="text" class="form-input" id="systemNameInput" placeholder="e.g., Production Server">
+                <div class="systems-list-container">
+                    <h3 class="systems-list-title">Registered Systems</h3>
+                    <div class="systems-list" id="systemsList">
+                        <!-- Systems will be listed here -->
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Config File Path</label>
-                        <input type="text" class="form-input" id="systemPathInput" placeholder="e.g., /path/to/config.env or config.env">
-                        <div class="form-helper">Relative paths are resolved from the project root. Currently supports properties-based formats (.env, .properties). Future support planned for YAML, XML, and other formats.</div>
-                    </div>
-                    <div class="form-actions">
-                        <button class="btn btn-cancel" id="cancelFormBtn">Cancel</button>
-                        <button class="btn btn-save" id="saveSystemBtn">Save</button>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button class="btn btn-save" id="addSystemBtn">+ Add System</button>
                 </div>
             </div>
         </div>

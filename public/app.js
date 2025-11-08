@@ -1476,7 +1476,18 @@ class SettingsApp {
         const regularSystems = this.systems.filter(s => s.name !== 'System Settings');
         
         if (regularSystems.length === 0) {
-            list.innerHTML = '<div class="loading">No systems registered. Click "Add System" to register one.</div>';
+            const emptyState = document.createElement('div');
+            emptyState.className = 'system-empty-state';
+            emptyState.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; color: var(--text-tertiary);">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48" style="opacity: 0.5; margin-bottom: 16px;">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    <p style="font-size: 14px; margin: 0;">No systems registered yet.</p>
+                    <p style="font-size: 13px; margin: 8px 0 0 0; opacity: 0.8;">Click "Add System" above to register a new system.</p>
+                </div>
+            `;
+            list.appendChild(emptyState);
             return;
         }
         
@@ -1517,6 +1528,7 @@ class SettingsApp {
         const formTitle = document.getElementById('formTitle');
         const nameInput = document.getElementById('systemNameInput');
         const pathInput = document.getElementById('systemPathInput');
+        const addSystemBtnContainer = document.getElementById('addSystemBtnContainer');
         
         if (system) {
             formTitle.textContent = 'Edit System';
@@ -1531,12 +1543,19 @@ class SettingsApp {
         }
         
         form.style.display = 'block';
-        document.getElementById('addSystemBtn').style.display = 'none';
+        addSystemBtnContainer.style.display = 'none';
+        
+        // Scroll form into view and focus first input
+        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        setTimeout(() => nameInput.focus(), 100);
     }
 
     hideSystemForm() {
-        document.getElementById('systemForm').style.display = 'none';
-        document.getElementById('addSystemBtn').style.display = 'block';
+        const form = document.getElementById('systemForm');
+        const addSystemBtnContainer = document.getElementById('addSystemBtnContainer');
+        
+        form.style.display = 'none';
+        addSystemBtnContainer.style.display = 'block';
         document.getElementById('systemNameInput').value = '';
         document.getElementById('systemPathInput').value = '';
         this.editingSystemName = null;
@@ -1625,10 +1644,6 @@ class SettingsApp {
         // Don't allow deleting System Settings
         if (systemName === 'System Settings') {
             this.showError('System Settings cannot be deleted.');
-            return;
-        }
-        
-        if (!confirm('Are you sure you want to delete this system? This will not delete the config file.')) {
             return;
         }
         

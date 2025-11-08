@@ -49,6 +49,17 @@ function createApp() {
     res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
   });
 
+  // Serve the single config file page
+  app.get('/config', (req, res) => {
+    // Set headers to prevent caching of the HTML page
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    res.sendFile(path.join(PUBLIC_DIR, 'config.html'));
+  });
+
   return app;
 }
 

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Config Studio - Single Config</title>
+    <link rel="stylesheet" href="themes.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="settings-container">
+        <div class="settings-header">
+            <div class="header-brand">
+                <h1 id="headerSystemName">Config Studio</h1>
+                <p class="header-tagline">Configuration Management</p>
+            </div>
+            <div class="header-actions">
+                <button class="close-btn" id="closeBtn">×</button>
+            </div>
+        </div>
+        
+        <div class="settings-content">
+            <div class="sidebar">
+                <nav class="nav-menu" id="navMenu">
+                    <!-- Tabs will be generated dynamically -->
+                </nav>
+            </div>
+            
+            <div class="main-content">
+                <div class="config-path-display" id="configPathDisplay">
+                    <!-- Config file path will be displayed here -->
+                </div>
+                <div class="tab-content" id="tabContent">
+                    <!-- Content will be generated dynamically -->
+                </div>
+                
+                <div class="action-buttons" id="actionButtons" style="display: none;">
+                    <!-- Auto-save indicator will be shown here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="config.js"></script>
+</body>
+</html>
+

@@ -13,6 +13,7 @@ function createSettingsRoutes(envFilePath, registryPath, systemSettingsPath, pro
 
   // GET /api/settings - Get all settings organized by sections
   // Supports ?system=<systemName> query parameter
+  // Also supports ?system=<systemName>&file=<absolutePath> for direct file access
   // Always reads fresh from config file (no caching)
   router.get('/', async (req, res) => {
     try {
@@ -28,23 +29,35 @@ function createSettingsRoutes(envFilePath, registryPath, systemSettingsPath, pro
         return res.status(400).json({ error: 'System parameter is required. Please select a system.' });
       }
       
-      // Check System Settings first (stored separately)
-      const systemSettings = await loadSystemSettings(systemSettingsPath, projectRoot);
-      let system = null;
+      let configFilePath = null;
       
-      if (systemSettings && systemSettings.name === req.query.system) {
-        system = systemSettings;
+      // If file parameter is provided, use it directly (for single config page)
+      if (req.query.file) {
+        configFilePath = decodeURIComponent(req.query.file);
+        // Validate that it's an absolute path
+        if (!path.isAbsolute(configFilePath)) {
+          return res.status(400).json({ error: 'File path must be absolute' });
+        }
       } else {
-        // Check regular systems
-        const systems = await loadSystemsRegistry(registryPath, projectRoot);
-        system = systems.find(s => s.name === req.query.system);
+        // Otherwise, look up system from registry
+        // Check System Settings first (stored separately)
+        const systemSettings = await loadSystemSettings(systemSettingsPath, projectRoot);
+        let system = null;
+        
+        if (systemSettings && systemSettings.name === req.query.system) {
+          system = systemSettings;
+        } else {
+          // Check regular systems
+          const systems = await loadSystemsRegistry(registryPath, projectRoot);
+          system = systems.find(s => s.name === req.query.system);
+        }
+        
+        if (!system) {
+          return res.status(404).json({ error: 'System not found' });
+        }
+        
+        configFilePath = system.configPath;
       }
-      
-      if (!system) {
-        return res.status(404).json({ error: 'System not found' });
-      }
-      
-      const configFilePath = system.configPath;
       
       // Check if format is supported (determine on the fly)
       if (!isFormatSupported(configFilePath)) {
@@ -99,6 +112,7 @@ function createSettingsRoutes(envFilePath, registryPath, systemSettingsPath, pro
 
   // POST /api/settings - Save settings
   // Supports ?system=<systemId> query parameter
+  // Also supports ?system=<systemName>&file=<absolutePath> for direct file access
   router.post('/', async (req, res) => {
     try {
       // System parameter is required
@@ -106,23 +120,35 @@ function createSettingsRoutes(envFilePath, registryPath, systemSettingsPath, pro
         return res.status(400).json({ error: 'System parameter is required. Please select a system.' });
       }
       
-      // Check System Settings first (stored separately)
-      const systemSettings = await loadSystemSettings(systemSettingsPath, projectRoot);
-      let system = null;
+      let configFilePath = null;
       
-      if (systemSettings && systemSettings.name === req.query.system) {
-        system = systemSettings;
+      // If file parameter is provided, use it directly (for single config page)
+      if (req.query.file) {
+        configFilePath = decodeURIComponent(req.query.file);
+        // Validate that it's an absolute path
+        if (!path.isAbsolute(configFilePath)) {
+          return res.status(400).json({ error: 'File path must be absolute' });
+        }
       } else {
-        // Check regular systems
-        const systems = await loadSystemsRegistry(registryPath, projectRoot);
-        system = systems.find(s => s.name === req.query.system);
+        // Otherwise, look up system from registry
+        // Check System Settings first (stored separately)
+        const systemSettings = await loadSystemSettings(systemSettingsPath, projectRoot);
+        let system = null;
+        
+        if (systemSettings && systemSettings.name === req.query.system) {
+          system = systemSettings;
+        } else {
+          // Check regular systems
+          const systems = await loadSystemsRegistry(registryPath, projectRoot);
+          system = systems.find(s => s.name === req.query.system);
+        }
+        
+        if (!system) {
+          return res.status(404).json({ error: 'System not found' });
+        }
+        
+        configFilePath = system.configPath;
       }
-      
-      if (!system) {
-        return res.status(404).json({ error: 'System not found' });
-      }
-      
-      const configFilePath = system.configPath;
       
       const data = req.body;
       

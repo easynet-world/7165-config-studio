@@ -223,13 +223,15 @@ class SettingsApp {
             this.loadCustomCss(savedCustomCssUrl);
         }
         
-        // Load default theme from server config, then apply saved theme or default
+        // Load default theme from server config (.env.config-studio), then apply it
         this.loadDefaultTheme().then(() => {
-            const savedTheme = localStorage.getItem('configStudioTheme') || this.defaultTheme;
-            this.setTheme(savedTheme);
+            // Use theme from .env.config-studio file (not from localStorage)
+            // This ensures the configured theme is always used on startup
+            const themeFromConfig = this.defaultTheme;
+            this.setTheme(themeFromConfig);
             
-            // If custom theme was saved, load the URL into the input
-            if (savedTheme === 'custom' && savedCustomCssUrl) {
+            // If custom theme was configured, load the URL into the input
+            if (themeFromConfig === 'custom' && savedCustomCssUrl) {
                 const customCssInput = document.getElementById('customCssUrlInput');
                 if (customCssInput) {
                     customCssInput.value = savedCustomCssUrl;

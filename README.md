@@ -1,6 +1,6 @@
 # Config Studio
 
-> **The simplest way to manage configurations.**
+> ## The simplest way to manage configurations.
 
 ![Config Studio](https://raw.githubusercontent.com/easynet-world/7165-config-studio/master/public/images/config-studio.png)
 

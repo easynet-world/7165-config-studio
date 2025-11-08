@@ -366,7 +366,7 @@ async function registerExampleSystems(registryPath, projectRoot) {
 }
 
 /**
- * Auto-register local config file if no systems are registered
+ * Auto-register default config file if no systems are registered
  * Uses CONFIG_STUDIO_DEFAULT_CONFIG_FILE from .env.config-studio, defaults to .env
  * @param {string} registryPath - Path to systems registry file
  * @param {string} projectRoot - Project root directory
@@ -394,19 +394,6 @@ async function autoRegisterLocalEnv(registryPath, projectRoot) {
       return false;
     }
     
-    // Check if default config file is the same as .env.config-studio (don't register if it's the same)
-    const configStudioEnvPath = path.join(projectRoot, '.env.config-studio');
-    try {
-      const configStats = await fsPromises.stat(configPath);
-      const configStudioStats = await fsPromises.stat(configStudioEnvPath);
-      // If they're the same file (same inode), don't register
-      if (configStats.ino === configStudioStats.ino) {
-        return false;
-      }
-    } catch (error) {
-      // .env.config-studio doesn't exist or can't be accessed, continue
-    }
-    
     // Generate system name from project root directory name
     const projectName = path.basename(projectRoot) || 'Project';
     const systemName = projectName.charAt(0).toUpperCase() + projectName.slice(1);
@@ -425,10 +412,10 @@ async function autoRegisterLocalEnv(registryPath, projectRoot) {
     systems.push(validatedSystem);
     await saveSystemsRegistry(registryPath, systems);
     
-    console.log(`Auto-registered local config file: ${validatedSystem.name} (${validatedSystem.configPath})`);
+    console.log(`Auto-registered default config file: ${validatedSystem.name} (${validatedSystem.configPath})`);
     return true;
   } catch (error) {
-    console.warn('Error auto-registering local .env file:', error.message);
+    console.warn('Error auto-registering default config file:', error.message);
     return false;
   }
 }

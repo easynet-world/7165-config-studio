@@ -424,12 +424,8 @@ class SettingsApp {
             this.closeSystemModal();
         });
 
-        document.getElementById('addSystemBtn').addEventListener('click', () => {
-            this.showSystemForm();
-        });
-
         document.getElementById('cancelFormBtn').addEventListener('click', () => {
-            this.hideSystemForm();
+            this.closeSystemModal();
         });
 
         document.getElementById('saveSystemBtn').addEventListener('click', () => {
@@ -1543,8 +1539,8 @@ class SettingsApp {
     // System Management Methods
     openSystemModal() {
         document.getElementById('systemModal').classList.add('active');
-        this.renderSystemsList();
-        this.hideSystemForm();
+        // Show the form directly for adding a new system
+        this.showSystemForm();
     }
 
     closeSystemModal() {
@@ -1613,7 +1609,6 @@ class SettingsApp {
         const formTitle = document.getElementById('formTitle');
         const nameInput = document.getElementById('systemNameInput');
         const pathInput = document.getElementById('systemPathInput');
-        const addSystemBtnContainer = document.getElementById('addSystemBtnContainer');
         
         if (system) {
             formTitle.textContent = 'Edit System';
@@ -1628,7 +1623,6 @@ class SettingsApp {
         }
         
         form.style.display = 'block';
-        addSystemBtnContainer.style.display = 'none';
         
         // Scroll form into view and focus first input
         form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1637,10 +1631,8 @@ class SettingsApp {
 
     hideSystemForm() {
         const form = document.getElementById('systemForm');
-        const addSystemBtnContainer = document.getElementById('addSystemBtnContainer');
         
         form.style.display = 'none';
-        addSystemBtnContainer.style.display = 'block';
         document.getElementById('systemNameInput').value = '';
         document.getElementById('systemPathInput').value = '';
         this.editingSystemName = null;
@@ -1713,8 +1705,7 @@ class SettingsApp {
             }
             
             await this.loadSystems();
-            this.renderSystemsList();
-            this.hideSystemForm();
+            this.closeSystemModal();
             this.showSuccess('System saved successfully!');
             // Refresh the system tabs in the main UI
             this.renderMainTabs();
@@ -1770,7 +1761,6 @@ class SettingsApp {
             } else {
                 await this.loadSystems();
             }
-            this.renderSystemsList();
             this.renderMainTabs();
             this.renderSystemSubTabs();
             this.showSuccess('System deleted successfully!');

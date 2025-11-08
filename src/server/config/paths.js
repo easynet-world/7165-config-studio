@@ -34,6 +34,7 @@ const PUBLIC_DIR = path.join(PACKAGE_ROOT, 'public');
 
 module.exports = {
   PROJECT_ROOT,
+  PACKAGE_ROOT,
   DATA_DIR,
   ENV_FILE_PATH,
   SYSTEMS_REGISTRY_PATH,

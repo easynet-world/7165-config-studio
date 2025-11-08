@@ -11,7 +11,7 @@ const fs = require('fs');
 const http = require('http');
 const { getPort } = require('./config/port');
 const { createApp } = require('./app');
-const { PROJECT_ROOT, SYSTEMS_REGISTRY_PATH, SYSTEM_SETTINGS_PATH, ENV_FILE_PATH } = require('./config/paths');
+const { PROJECT_ROOT, SYSTEMS_REGISTRY_PATH, SYSTEM_SETTINGS_PATH, ENV_FILE_PATH, PACKAGE_ROOT } = require('./config/paths');
 const { migrateRegistryIfNeeded } = require('./features/systems/migration');
 const { registerStartupSystem, getStartupConfig, registerConfigStudio, registerExampleSystems } = require('./features/systems/startup');
 const { FileWatcher } = require('./features/file-watcher');
@@ -22,11 +22,20 @@ let wsServer = null;
 
 /**
  * Ensure .env.config-studio file exists in the current directory
- * Creates it with default configuration if it doesn't exist
+ * Creates it by cloning from package root template if it doesn't exist
  */
 function ensureConfigFile() {
   if (!fs.existsSync(ENV_FILE_PATH)) {
-    const defaultContent = `# Config Studio Configuration
+    // Try to use template from package root
+    const templatePath = path.join(PACKAGE_ROOT, '.env.config-studio');
+    let defaultContent;
+    
+    if (fs.existsSync(templatePath)) {
+      // Clone from existing template file
+      defaultContent = fs.readFileSync(templatePath, 'utf8');
+    } else {
+      // Fallback to minimal default if template doesn't exist
+      defaultContent = `# Config Studio Configuration
 # This file contains settings for Config Studio itself
 # All settings are optional - uncomment and modify as needed
 
@@ -54,6 +63,8 @@ DEFAULT_THEME=cyberpunk
 # Custom name for the startup config (used with CONFIG_STUDIO_CONFIG_PATH)
 # CONFIG_STUDIO_SYSTEM_NAME=My System
 `;
+    }
+    
     fs.writeFileSync(ENV_FILE_PATH, defaultContent, 'utf8');
     console.log(`Created .env.config-studio in ${PROJECT_ROOT}`);
   }

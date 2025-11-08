@@ -143,12 +143,23 @@ async function registerConfigStudio(systemSettingsPath, projectRoot, defaultEnvP
       return true;
     }
 
-    // Check if .env.config-studio file exists, if not, create an empty one
+    // Check if .env.config-studio file exists, if not, create one by cloning from template
     if (!fs.existsSync(absoluteEnvPath)) {
       console.log(`System Settings: .env.config-studio file not found at ${absoluteEnvPath}`);
       console.log(`Creating .env.config-studio file...`);
-      // Create .env.config-studio file with full default configuration
-      const defaultContent = `# Config Studio Configuration
+      
+      // Try to clone from package root template
+      const { PACKAGE_ROOT } = require('../config/paths');
+      const templatePath = path.join(PACKAGE_ROOT, '.env.config-studio');
+      let defaultContent;
+      
+      if (fs.existsSync(templatePath)) {
+        // Clone from existing template file
+        defaultContent = fs.readFileSync(templatePath, 'utf8');
+        console.log(`Cloned .env.config-studio from package template`);
+      } else {
+        // Fallback to minimal default if template doesn't exist
+        defaultContent = `# Config Studio Configuration
 # This file contains settings for Config Studio itself
 # All settings are optional - uncomment and modify as needed
 
@@ -176,6 +187,8 @@ DEFAULT_THEME=cyberpunk
 # Custom name for the startup config (used with CONFIG_STUDIO_CONFIG_PATH)
 # CONFIG_STUDIO_SYSTEM_NAME=My System
 `;
+      }
+      
       fs.writeFileSync(absoluteEnvPath, defaultContent, 'utf8');
       console.log(`Created .env.config-studio with default configuration`);
     }

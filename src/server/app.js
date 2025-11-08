@@ -30,8 +30,11 @@ function createApp() {
 
   // Config endpoint - serves configuration from .env.config-studio
   app.get('/api/config', (req, res) => {
+    // Get theme from config, map 'light' to 'default' for theme system compatibility
+    let theme = process.env.CONFIG_STUDIO_THEME || process.env.DEFAULT_THEME || 'cyberpunk';
+    // Keep 'light' as-is in config, but frontend will map it to 'default' for theme system
     res.json({
-      defaultTheme: process.env.CONFIG_STUDIO_THEME || process.env.DEFAULT_THEME || 'cyberpunk'
+      defaultTheme: theme
     });
   });
 

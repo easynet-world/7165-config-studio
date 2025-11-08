@@ -227,7 +227,11 @@ class SettingsApp {
         this.loadDefaultTheme().then(() => {
             // Use theme from .env.config-studio file (not from localStorage)
             // This ensures the configured theme is always used on startup
-            const themeFromConfig = this.defaultTheme;
+            // Map 'light' to 'default' for theme system
+            let themeFromConfig = this.defaultTheme;
+            if (themeFromConfig === 'light') {
+                themeFromConfig = 'default';
+            }
             this.setTheme(themeFromConfig);
             
             // If custom theme was configured, load the URL into the input
@@ -293,28 +297,8 @@ class SettingsApp {
             document.documentElement.setAttribute('data-theme', themeName);
         }
         
-        // Save to localStorage
+        // Save to localStorage (save as themeName, not mapped value)
         localStorage.setItem('configStudioTheme', themeName);
-        
-        // Update UI
-        this.updateThemeSelector(themeName);
-    }
-
-    updateThemeSelector(themeName) {
-        const themeNameSpan = document.getElementById('currentThemeName');
-        if (themeNameSpan) {
-            themeNameSpan.textContent = this.themeNames[themeName] || 'Theme';
-        }
-        
-        // Update active state in dropdown
-        const themeOptions = document.querySelectorAll('.theme-option');
-        themeOptions.forEach(option => {
-            if (option.dataset.theme === themeName) {
-                option.classList.add('active');
-            } else {
-                option.classList.remove('active');
-            }
-        });
     }
     
     openCustomThemeModal() {
@@ -382,42 +366,6 @@ class SettingsApp {
         });
         
         // Theme selector
-        const themeSelectorBtn = document.getElementById('themeSelectorBtn');
-        const themeDropdown = document.getElementById('themeDropdown');
-        
-        if (themeSelectorBtn && themeDropdown) {
-            // Toggle dropdown
-            themeSelectorBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                themeDropdown.classList.toggle('active');
-            });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!themeSelectorBtn.contains(e.target) && !themeDropdown.contains(e.target)) {
-                    themeDropdown.classList.remove('active');
-                }
-            });
-            
-            // Theme option clicks
-            const themeOptions = document.querySelectorAll('.theme-option');
-            themeOptions.forEach(option => {
-                option.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const themeName = option.dataset.theme;
-                    
-                    if (themeName === 'custom') {
-                        // Open custom theme configuration modal
-                        this.openCustomThemeModal();
-                        themeDropdown.classList.remove('active');
-                    } else {
-                        // Apply theme directly
-                        this.setTheme(themeName);
-                        themeDropdown.classList.remove('active');
-                    }
-                });
-            });
-        }
         
         // Custom theme modal
         const customThemeModal = document.getElementById('customThemeModal');
@@ -1050,51 +998,111 @@ class SettingsApp {
                 formGroup.dataset.fieldKey = item.key.toLowerCase();
                 formGroup.dataset.fieldName = formatFieldName(item.key).toLowerCase();
 
-                const input = document.createElement('input');
-                
-                // Apply rules to input
-                if (item.rules) {
-                    if (item.rules.type === 'number') {
-                        input.type = 'number';
-                        if (item.rules.min !== undefined) {
-                            input.min = item.rules.min;
+                // Special handling for CONFIG_STUDIO_THEME - render as select dropdown
+                if (item.key === 'CONFIG_STUDIO_THEME') {
+                    const select = document.createElement('select');
+                    select.className = 'form-input form-select';
+                    select.dataset.section = sectionName;
+                    select.dataset.key = item.key;
+                    
+                    // Theme options - map 'light' to 'default' for theme system
+                    const themes = [
+                        { value: 'light', label: 'Light (Default)', themeValue: 'default' },
+                        { value: 'cyberpunk', label: 'Cyberpunk', themeValue: 'cyberpunk' },
+                        { value: 'vscode-dark', label: 'VS Code Dark', themeValue: 'vscode-dark' },
+                        { value: 'vscode-light', label: 'VS Code Light', themeValue: 'vscode-light' },
+                        { value: 'chatgpt', label: 'ChatGPT', themeValue: 'chatgpt' },
+                        { value: 'dracula', label: 'Dracula', themeValue: 'dracula' },
+                        { value: 'nord', label: 'Nord', themeValue: 'nord' },
+                        { value: 'monokai', label: 'Monokai', themeValue: 'monokai' },
+                        { value: 'custom', label: 'Custom CSS', themeValue: 'custom' }
+                    ];
+                    
+                    // Map config value to select value (handle 'default' -> 'light')
+                    const currentValue = item.value === 'default' ? 'light' : item.value;
+                    
+                    themes.forEach(theme => {
+                        const option = document.createElement('option');
+                        option.value = theme.value;
+                        option.textContent = theme.label;
+                        if (currentValue === theme.value) {
+                            option.selected = true;
                         }
-                        if (item.rules.max !== undefined) {
-                            input.max = item.rules.max;
+                        select.appendChild(option);
+                    });
+                    
+                    select.addEventListener('change', (e) => {
+                        const newValue = e.target.value;
+                        const selectedTheme = themes.find(t => t.value === newValue);
+                        const themeValue = selectedTheme ? selectedTheme.themeValue : newValue;
+                        
+                        // Update settings object (save as 'light' not 'default')
+                        item.value = newValue;
+                        // Mark as modified
+                        select.classList.add('modified');
+                        this.hasChanges = true;
+                        this.updateSaveButton();
+                        
+                        // Apply theme immediately (use themeValue for theme system)
+                        if (themeValue === 'custom') {
+                            // Open custom theme modal if custom is selected
+                            this.openCustomThemeModal();
+                        } else {
+                            this.setTheme(themeValue);
                         }
-                    } else if (item.rules.type === 'url') {
-                        input.type = 'url';
-                    } else if (item.rules.type === 'email') {
-                        input.type = 'email';
+                        
+                        // Also update the input change handler for consistency
+                        this.handleInputChange(e.target);
+                    });
+                    
+                    formGroup.appendChild(select);
+                } else {
+                    const input = document.createElement('input');
+                    
+                    // Apply rules to input
+                    if (item.rules) {
+                        if (item.rules.type === 'number') {
+                            input.type = 'number';
+                            if (item.rules.min !== undefined) {
+                                input.min = item.rules.min;
+                            }
+                            if (item.rules.max !== undefined) {
+                                input.max = item.rules.max;
+                            }
+                        } else if (item.rules.type === 'url') {
+                            input.type = 'url';
+                        } else if (item.rules.type === 'email') {
+                            input.type = 'email';
+                        } else {
+                            input.type = 'text';
+                        }
+                        
+                        if (item.rules.required) {
+                            input.required = true;
+                        }
+                        
+                        if (item.rules.pattern) {
+                            input.pattern = item.rules.pattern;
+                        }
+                        
+                        // Store rules for validation
+                        input.dataset.rules = JSON.stringify(item.rules);
                     } else {
                         input.type = 'text';
                     }
                     
-                    if (item.rules.required) {
-                        input.required = true;
-                    }
-                    
-                    if (item.rules.pattern) {
-                        input.pattern = item.rules.pattern;
-                    }
-                    
-                    // Store rules for validation
-                    input.dataset.rules = JSON.stringify(item.rules);
-                } else {
-                    input.type = 'text';
+                    input.className = 'form-input';
+                    input.value = item.value;
+                    input.dataset.section = sectionName;
+                    input.dataset.key = item.key;
+                    input.addEventListener('input', (e) => {
+                        this.handleInputChange(e.target);
+                    });
+                    input.addEventListener('blur', (e) => {
+                        this.validateField(e.target);
+                    });
+                    formGroup.appendChild(input);
                 }
-                
-                input.className = 'form-input';
-                input.value = item.value;
-                input.dataset.section = sectionName;
-                input.dataset.key = item.key;
-                input.addEventListener('input', (e) => {
-                    this.handleInputChange(e.target);
-                });
-                input.addEventListener('blur', (e) => {
-                    this.validateField(e.target);
-                });
-                formGroup.appendChild(input);
                 
                 // Add error message container
                 const errorDiv = document.createElement('div');

@@ -4,10 +4,10 @@
  * Config Studio Server Entry Point
  */
 
-// Load environment variables from .env.config-studio file
-require('dotenv').config({ path: '.env.config-studio' });
+// Environment variables will be loaded after ensuring .env.config-studio exists
 
 const path = require('path');
+const fs = require('fs');
 const http = require('http');
 const { getPort } = require('./config/port');
 const { createApp } = require('./app');
@@ -20,7 +20,31 @@ const { WebSocketServer } = require('./features/websocket');
 let fileWatcher = null;
 let wsServer = null;
 
+/**
+ * Ensure .env.config-studio file exists in the current directory
+ * Creates it with default configuration if it doesn't exist
+ */
+function ensureConfigFile() {
+  if (!fs.existsSync(ENV_FILE_PATH)) {
+    const defaultContent = `# Config Studio Configuration
+# This file contains settings for Config Studio itself
+
+# Theme Configuration
+# Available themes: light, cyberpunk, vscode-dark, vscode-light, chatgpt, dracula, nord, monokai, custom
+DEFAULT_THEME=cyberpunk
+`;
+    fs.writeFileSync(ENV_FILE_PATH, defaultContent, 'utf8');
+    console.log(`Created .env.config-studio in ${PROJECT_ROOT}`);
+  }
+}
+
 async function startServer() {
+  // Ensure .env.config-studio exists before loading environment variables
+  ensureConfigFile();
+  
+  // Reload environment variables after creating the file
+  require('dotenv').config({ path: '.env.config-studio' });
+  
   // Migrate registry from old location if needed
   const oldRegistryPath = path.join(PROJECT_ROOT, '.systems-registry.json');
   await migrateRegistryIfNeeded(oldRegistryPath, SYSTEMS_REGISTRY_PATH);

@@ -1,5 +1,10 @@
 # Config Studio
 
+[![npm version](https://img.shields.io/npm/v/@easynet/config-studio.svg)](https://www.npmjs.com/package/@easynet/config-studio)
+[![npm downloads](https://img.shields.io/npm/dm/@easynet/config-studio.svg)](https://www.npmjs.com/package/@easynet/config-studio)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/easynet-world/7165-config-studio.svg?style=social&label=Star)](https://github.com/easynet-world/7165-config-studio)
+
 > ## The simplest way to manage configurations.
 
 ![Config Studio](https://raw.githubusercontent.com/easynet-world/7165-config-studio/master/public/images/config-studio.png)

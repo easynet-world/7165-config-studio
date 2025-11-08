@@ -254,7 +254,7 @@ Starts Config Studio and manages the process:
 **Features:**
 - Automatically kills any existing `config-studio` processes
 - Sets process name to "config-studio" for easy identification
-- Saves PID to `.config-studio.pid`
+- Uses process name to find and manage processes (no PID file needed)
 - Supports all command-line options (e.g., `./start.sh --port 8080`)
 
 **Example:**
@@ -273,7 +273,7 @@ Stops all Config Studio processes:
 **Features:**
 - Finds and stops all processes named "config-studio"
 - Graceful shutdown (SIGTERM) followed by force kill if needed
-- Cleans up PID file
+- Uses process name to find processes (no PID file needed)
 
 **Example:**
 ```bash

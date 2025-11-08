@@ -5,7 +5,6 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROCESS_NAME="config-studio"
-PID_FILE="$SCRIPT_DIR/.config-studio.pid"
 
 echo "Stopping $PROCESS_NAME..."
 
@@ -14,22 +13,6 @@ PIDS=$(pgrep -f "$PROCESS_NAME" 2>/dev/null || true)
 
 if [ -z "$PIDS" ]; then
     echo "No $PROCESS_NAME processes found."
-    
-    # Check PID file as fallback
-    if [ -f "$PID_FILE" ]; then
-        SAVED_PID=$(cat "$PID_FILE" 2>/dev/null || true)
-        if [ -n "$SAVED_PID" ] && kill -0 "$SAVED_PID" 2>/dev/null; then
-            echo "Found process from PID file: $SAVED_PID"
-            kill "$SAVED_PID" 2>/dev/null || true
-            sleep 1
-            if kill -0 "$SAVED_PID" 2>/dev/null; then
-                kill -9 "$SAVED_PID" 2>/dev/null || true
-            fi
-            echo "Process $SAVED_PID stopped."
-        fi
-        rm -f "$PID_FILE"
-    fi
-    
     exit 0
 fi
 
@@ -58,11 +41,6 @@ if [ -n "$REMAINING" ]; then
         fi
     done
     sleep 1
-fi
-
-# Clean up PID file
-if [ -f "$PID_FILE" ]; then
-    rm -f "$PID_FILE"
 fi
 
 # Final check

@@ -7,5 +7,4 @@ node_modules/
 .systems-registry.json
 data/
 examples/
-.config-studio.pid
 

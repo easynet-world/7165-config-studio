@@ -5,7 +5,6 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROCESS_NAME="config-studio"
-PID_FILE="$SCRIPT_DIR/.config-studio.pid"
 
 # Function to kill existing processes
 kill_existing_processes() {
@@ -42,11 +41,6 @@ kill_existing_processes() {
     else
         echo "No existing $PROCESS_NAME processes found."
     fi
-    
-    # Clean up old PID file
-    if [ -f "$PID_FILE" ]; then
-        rm -f "$PID_FILE"
-    fi
 }
 
 # Kill existing processes
@@ -72,22 +66,17 @@ fi
 exec -a "$PROCESS_NAME" "$NODE_CMD" "$SCRIPT_DIR/src/server/index.js" "$@" &
 NEW_PID=$!
 
-# Save PID
-echo $NEW_PID > "$PID_FILE"
-
 # Wait a moment to check if process started successfully
 sleep 1
 
 # Verify the process is still running
 if kill -0 "$NEW_PID" 2>/dev/null; then
     echo "$PROCESS_NAME started successfully (PID: $NEW_PID)"
-    echo "PID saved to: $PID_FILE"
     echo ""
     echo "To stop the server, run: ./stop.sh"
-    echo "Or use: kill $NEW_PID"
+    echo "Or use: pkill -f $PROCESS_NAME"
 else
     echo "Error: Failed to start $PROCESS_NAME"
-    rm -f "$PID_FILE"
     exit 1
 fi
 

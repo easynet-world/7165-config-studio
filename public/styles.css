@@ -532,6 +532,33 @@ body {
     border-top: 1px solid var(--border-primary);
 }
 
+.auto-save-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.auto-save-indicator.saved {
+    color: var(--accent-primary);
+}
+
+.auto-save-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--border-secondary);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .btn {
     padding: 10px 24px;
     font-size: 14px;

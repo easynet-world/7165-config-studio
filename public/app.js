@@ -83,6 +83,8 @@ class SettingsApp {
         this.originalSettings = {};
         this.currentTab = null;
         this.hasChanges = false;
+        this.autoSaveTimer = null;
+        this.isSaving = false;
         this.searchQuery = '';
         this.systems = [];
         this.systemSettings = null; // System Settings stored separately
@@ -400,15 +402,9 @@ class SettingsApp {
             });
         }
 
-        document.getElementById('cancelBtn').addEventListener('click', () => {
-            if (this.hasChanges) {
-                this.resetChanges();
-            }
-        });
+        // Cancel button removed - using auto-save instead
 
-        document.getElementById('saveBtn').addEventListener('click', () => {
-            this.saveSettings();
-        });
+        // Auto-save is now enabled, no manual save button needed
 
         // Main tab switching
         document.querySelectorAll('.main-tab').forEach(tab => {
@@ -955,7 +951,8 @@ class SettingsApp {
             textarea.addEventListener('input', () => {
                 this.rawContent = textarea.value;
                 this.hasChanges = (this.rawContent !== this.originalRawContent);
-                this.updateSaveButton();
+                // Auto-save with debouncing
+                this.debouncedAutoSave();
             });
             return;
         }
@@ -1051,7 +1048,8 @@ class SettingsApp {
                         // Mark as modified
                         select.classList.add('modified');
                         this.hasChanges = true;
-                        this.updateSaveButton();
+                        // Auto-save with debouncing
+                        this.debouncedAutoSave();
                         
                         // Apply theme immediately (use themeValue for theme system)
                         if (themeValue === 'custom') {
@@ -1337,7 +1335,6 @@ class SettingsApp {
         // Mark as modified
         input.classList.add('modified');
         this.hasChanges = true;
-        this.updateSaveButton();
         
         // Clear error on input
         this.clearFieldError(input);
@@ -1345,6 +1342,79 @@ class SettingsApp {
         // Update search filter if search is active
         if (this.searchQuery) {
             this.applySearchFilter();
+        }
+        
+        // Auto-save with debouncing (wait 1 second after last change)
+        this.debouncedAutoSave();
+    }
+    
+    debouncedAutoSave() {
+        // Clear existing timer
+        if (this.autoSaveTimer) {
+            clearTimeout(this.autoSaveTimer);
+        }
+        
+        // Don't save if already saving
+        if (this.isSaving) {
+            return;
+        }
+        
+        // Set new timer for auto-save
+        this.autoSaveTimer = setTimeout(() => {
+            this.autoSave();
+        }, 1000); // Wait 1 second after last change
+    }
+    
+    async autoSave() {
+        // Don't save if no changes or already saving
+        if (!this.hasChanges || this.isSaving) {
+            return;
+        }
+        
+        // Don't save if no system selected
+        if (!this.currentSystemName) {
+            return;
+        }
+        
+        this.isSaving = true;
+        this.showSavingIndicator();
+        
+        try {
+            await this.saveSettings();
+        } catch (error) {
+            console.error('Auto-save error:', error);
+            // Error is already shown by saveSettings
+        } finally {
+            this.isSaving = false;
+            this.hideSavingIndicator();
+        }
+    }
+    
+    showSavingIndicator() {
+        const actionButtons = document.getElementById('actionButtons');
+        if (actionButtons) {
+            actionButtons.style.display = 'flex';
+            actionButtons.innerHTML = `
+                <div class="auto-save-indicator">
+                    <span class="auto-save-spinner"></span>
+                    <span class="auto-save-text">Saving...</span>
+                </div>
+            `;
+        }
+    }
+    
+    hideSavingIndicator() {
+        const actionButtons = document.getElementById('actionButtons');
+        if (actionButtons) {
+            actionButtons.innerHTML = `
+                <div class="auto-save-indicator saved">
+                    <span class="auto-save-text">Saved</span>
+                </div>
+            `;
+            // Hide after 2 seconds
+            setTimeout(() => {
+                actionButtons.style.display = 'none';
+            }, 2000);
         }
     }
     
@@ -1425,17 +1495,13 @@ class SettingsApp {
         }
     }
 
-    updateSaveButton() {
-        const saveBtn = document.getElementById('saveBtn');
-        saveBtn.disabled = !this.hasChanges;
-    }
+    // updateSaveButton removed - using auto-save instead
 
     resetChanges() {
         if (this.rawMode) {
             this.rawContent = this.originalRawContent;
             this.hasChanges = false;
             this.render();
-            this.updateSaveButton();
             return;
         }
         
@@ -1446,7 +1512,6 @@ class SettingsApp {
         this.render();
         this.searchQuery = searchQuery;
         this.performSearch();
-        this.updateSaveButton();
     }
 
     async saveSettings() {
@@ -1479,8 +1544,7 @@ class SettingsApp {
                 const result = await response.json();
                 this.originalRawContent = this.rawContent;
                 this.hasChanges = false;
-                this.updateSaveButton();
-                this.showSuccess(result.message || 'Settings saved successfully!');
+                // Success indicator shown via hideSavingIndicator
             } catch (error) {
                 console.error('Error saving settings:', error);
                 this.showError(error.message || 'Failed to save settings. Please try again.');
@@ -1531,14 +1595,13 @@ class SettingsApp {
             // Update original settings
             this.originalSettings = JSON.parse(JSON.stringify(this.settings));
             this.hasChanges = false;
-            this.updateSaveButton();
             
             // Remove modified class from all inputs
             document.querySelectorAll('.form-input.modified').forEach(input => {
                 input.classList.remove('modified');
             });
 
-            this.showSuccess('Settings saved successfully!');
+            // Success indicator shown via hideSavingIndicator
             
             // Reload settings to ensure we have the latest from config file
             setTimeout(() => {

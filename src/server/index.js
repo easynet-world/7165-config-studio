@@ -13,7 +13,7 @@ const { getPort } = require('./config/port');
 const { createApp } = require('./app');
 const { PROJECT_ROOT, SYSTEMS_REGISTRY_PATH, SYSTEM_SETTINGS_PATH, ENV_FILE_PATH, PACKAGE_ROOT } = require('./config/paths');
 const { migrateRegistryIfNeeded } = require('./features/systems/migration');
-const { registerStartupSystem, getStartupConfig, registerConfigStudio, registerExampleSystems } = require('./features/systems/startup');
+const { registerStartupSystem, getStartupConfig, registerConfigStudio, registerExampleSystems, autoRegisterLocalEnv } = require('./features/systems/startup');
 const { FileWatcher } = require('./features/file-watcher');
 const { WebSocketServer } = require('./features/websocket');
 
@@ -96,6 +96,9 @@ async function startServer() {
 
         // Register example systems from examples directory
         await registerExampleSystems(SYSTEMS_REGISTRY_PATH, PROJECT_ROOT);
+
+        // Auto-register local .env file if no systems are registered
+        await autoRegisterLocalEnv(SYSTEMS_REGISTRY_PATH, PROJECT_ROOT);
 
   const PORT = getPort();
   const app = createApp();

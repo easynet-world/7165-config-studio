@@ -360,10 +360,75 @@ async function registerExampleSystems(registryPath, projectRoot) {
   }
 }
 
+/**
+ * Auto-register local .env file if no systems are registered
+ * @param {string} registryPath - Path to systems registry file
+ * @param {string} projectRoot - Project root directory
+ */
+async function autoRegisterLocalEnv(registryPath, projectRoot) {
+  try {
+    // Load existing systems (excluding System Settings)
+    const systems = await loadSystemsRegistry(registryPath, projectRoot);
+    
+    // If there are already registered systems, don't auto-register
+    if (systems.length > 0) {
+      return false;
+    }
+    
+    // Check if .env file exists in project root
+    const envPath = path.join(projectRoot, '.env');
+    
+    try {
+      await fsPromises.access(envPath);
+    } catch (error) {
+      // .env file doesn't exist, skip
+      return false;
+    }
+    
+    // Check if .env is the same as .env.config-studio (don't register if it's the same)
+    const configStudioEnvPath = path.join(projectRoot, '.env.config-studio');
+    try {
+      const envStats = await fsPromises.stat(envPath);
+      const configStudioStats = await fsPromises.stat(configStudioEnvPath);
+      // If they're the same file (same inode), don't register
+      if (envStats.ino === configStudioStats.ino) {
+        return false;
+      }
+    } catch (error) {
+      // .env.config-studio doesn't exist or can't be accessed, continue
+    }
+    
+    // Generate system name from project root directory name
+    const projectName = path.basename(projectRoot) || 'Project';
+    const systemName = projectName.charAt(0).toUpperCase() + projectName.slice(1);
+    
+    // Normalize path to absolute
+    const absoluteEnvPath = path.normalize(envPath);
+    
+    // Validate and create system
+    const validatedSystem = await validateSystem(
+      { name: systemName, configPath: absoluteEnvPath },
+      projectRoot,
+      true
+    );
+    
+    // Add to registry
+    systems.push(validatedSystem);
+    await saveSystemsRegistry(registryPath, systems);
+    
+    console.log(`Auto-registered local .env file: ${validatedSystem.name} (${validatedSystem.configPath})`);
+    return true;
+  } catch (error) {
+    console.warn('Error auto-registering local .env file:', error.message);
+    return false;
+  }
+}
+
 module.exports = {
   registerStartupSystem,
   getStartupConfig,
   registerConfigStudio,
-  registerExampleSystems
+  registerExampleSystems,
+  autoRegisterLocalEnv
 };
 

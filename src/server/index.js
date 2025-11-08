@@ -28,10 +28,31 @@ function ensureConfigFile() {
   if (!fs.existsSync(ENV_FILE_PATH)) {
     const defaultContent = `# Config Studio Configuration
 # This file contains settings for Config Studio itself
+# All settings are optional - uncomment and modify as needed
 
 # Theme Configuration
 # Available themes: light, cyberpunk, vscode-dark, vscode-light, chatgpt, dracula, nord, monokai, custom
+# Default: cyberpunk
 DEFAULT_THEME=cyberpunk
+
+# Server Configuration
+# Port number for Config Studio web interface (type:number, min:1, max:65535)
+# Default: 8880
+# DOTENV_UI_PORT=8880
+
+# Data Directory Configuration
+# Directory where Config Studio stores its registry and settings
+# Can be relative (to current directory) or absolute path
+# Default: ./data
+# DOTENV_UI_DATA_DIR=data
+
+# Startup Configuration
+# Automatically register a config file when Config Studio starts
+# CONFIG_STUDIO_CONFIG_PATH=/path/to/config.env
+
+# Startup System Name
+# Custom name for the startup config (used with CONFIG_STUDIO_CONFIG_PATH)
+# CONFIG_STUDIO_SYSTEM_NAME=My System
 `;
     fs.writeFileSync(ENV_FILE_PATH, defaultContent, 'utf8');
     console.log(`Created .env.config-studio in ${PROJECT_ROOT}`);

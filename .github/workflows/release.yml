@@ -107,3 +107,43 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release || echo "No release needed"
 
+      - name: Publish unscoped package
+        if: steps.configure_npm.outputs.npm_publish == 'true'
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          # Check if semantic-release created a release (package.json version was updated)
+          # Get the current version from package.json
+          VERSION=$(node -p "require('./package.json').version")
+          CURRENT_NAME=$(node -p "require('./package.json').name")
+          
+          echo "Current package: $CURRENT_NAME@$VERSION"
+          
+          # Only publish unscoped if we have a scoped package name
+          if [[ "$CURRENT_NAME" == "@easynet/config-studio" ]]; then
+            echo "Publishing unscoped package config-studio@$VERSION"
+            
+            # Save original package.json
+            cp package.json package.json.backup
+            
+            # Create a temporary package.json without scope
+            node -e "
+              const fs = require('fs');
+              const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+              pkg.name = 'config-studio';
+              delete pkg.publishConfig;
+              fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+            "
+            
+            # Publish the unscoped package
+            npm publish --registry=https://registry.npmjs.org/ --access=public || {
+              echo "::warning::Failed to publish unscoped package (may already exist or version conflict)"
+            }
+            
+            # Restore original package.json
+            mv package.json.backup package.json
+            echo "Restored original package.json"
+          else
+            echo "Skipping unscoped publish - package name is not scoped"
+          fi
+

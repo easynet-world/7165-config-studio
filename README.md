@@ -2,8 +2,6 @@
 
 > **The simplest way to manage configurations.**
 
-> **Note:** This package uses patch-only versioning. All releases are patch releases (e.g., 1.0.1 → 1.0.2 → 1.0.3).
-
 ![Config Studio](https://raw.githubusercontent.com/easynet-world/7165-config-studio/HEAD/public/images/config-studio.png)
 
 Config Studio is a modern, web-based configuration management tool that provides an intuitive interface for editing and managing configuration files across multiple systems and formats.

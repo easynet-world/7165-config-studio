@@ -5,8 +5,13 @@
 const path = require('path');
 const fs = require('fs');
 
-// __dirname is src/server/config, so go up 3 levels to reach project root
-const PROJECT_ROOT = path.join(__dirname, '../../..');
+// Use current working directory as project root (where user runs the command)
+// This ensures it works correctly when installed via npm/npx
+const PROJECT_ROOT = process.cwd();
+
+// Package root - where the package is installed (for accessing package files like public/)
+// __dirname is src/server/config, so go up 3 levels to reach package root
+const PACKAGE_ROOT = path.join(__dirname, '../../..');
 
 // Data directory - configurable via DOTENV_UI_DATA_DIR environment variable
 // Defaults to 'data' folder in project root
@@ -24,7 +29,8 @@ if (!fs.existsSync(DATA_DIR)) {
 const ENV_FILE_PATH = path.join(PROJECT_ROOT, '.env');
 const SYSTEMS_REGISTRY_PATH = path.join(DATA_DIR, 'systems-registry.json');
 const SYSTEM_SETTINGS_PATH = path.join(DATA_DIR, 'system-settings.json');
-const PUBLIC_DIR = path.join(PROJECT_ROOT, 'public');
+// Public directory is in the package, not in the project root
+const PUBLIC_DIR = path.join(PACKAGE_ROOT, 'public');
 
 module.exports = {
   PROJECT_ROOT,

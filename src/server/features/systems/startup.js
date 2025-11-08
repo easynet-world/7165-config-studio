@@ -4,7 +4,8 @@
  */
 
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
+const fsPromises = require('fs').promises;
 const { loadSystemsRegistry, saveSystemsRegistry } = require('./registry');
 const { validateSystem } = require('./validator');
 const { isFormatSupported, getSupportedExtensionsString } = require('../settings/formats');
@@ -142,6 +143,14 @@ async function registerConfigStudio(systemSettingsPath, projectRoot, defaultEnvP
       return true;
     }
 
+    // Check if .env file exists, if not, create an empty one or skip registration
+    if (!fs.existsSync(absoluteEnvPath)) {
+      console.log(`System Settings: .env file not found at ${absoluteEnvPath}`);
+      console.log(`Creating empty .env file...`);
+      // Create empty .env file
+      fs.writeFileSync(absoluteEnvPath, '# Config Studio Settings\n', 'utf8');
+    }
+
     // Register as "System Settings"
     const validatedSystem = await validateSystem(
       { name: 'System Settings', configPath: absoluteEnvPath },
@@ -172,7 +181,7 @@ async function registerExampleSystems(registryPath, projectRoot) {
   try {
     // Check if examples directory exists
     try {
-      await fs.access(examplesDir);
+      await fsPromises.access(examplesDir);
     } catch (error) {
       // Examples directory doesn't exist, skip
       return;
@@ -182,13 +191,13 @@ async function registerExampleSystems(registryPath, projectRoot) {
     const systems = await loadSystemsRegistry(registryPath, projectRoot);
     
     // Find all config files in examples subdirectories
-    const entries = await fs.readdir(examplesDir, { withFileTypes: true });
+    const entries = await fsPromises.readdir(examplesDir, { withFileTypes: true });
     const exampleConfigs = [];
     
     for (const entry of entries) {
       if (entry.isDirectory()) {
         const subDir = path.join(examplesDir, entry.name);
-        const files = await fs.readdir(subDir);
+        const files = await fsPromises.readdir(subDir);
         
         // Look for common config file names
         const configFiles = files.filter(file => {
@@ -229,7 +238,7 @@ async function registerExampleSystems(registryPath, projectRoot) {
     for (const system of systems) {
       try {
         // Check if file exists
-        await fs.access(system.configPath);
+        await fsPromises.access(system.configPath);
         // Check if path is within current project (for relative paths)
         const systemPath = path.relative(projectRoot, system.configPath);
         if (systemPath.startsWith('..')) {
@@ -284,7 +293,7 @@ async function registerExampleSystems(registryPath, projectRoot) {
       } else {
         try {
           // Check if file exists before registering
-          await fs.access(absolutePath);
+          await fsPromises.access(absolutePath);
           
           const validatedSystem = await validateSystem(
             { name: example.name, configPath: absolutePath },

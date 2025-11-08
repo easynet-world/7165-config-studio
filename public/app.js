@@ -420,9 +420,7 @@ class SettingsApp {
             this.closeSystemModal();
         });
 
-        document.getElementById('cancelFormBtn').addEventListener('click', () => {
-            this.closeSystemModal();
-        });
+        // Cancel button removed - modal can be closed with X button
 
         document.getElementById('saveSystemBtn').addEventListener('click', () => {
             this.saveSystem();

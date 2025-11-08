@@ -61,6 +61,11 @@ CONFIG_STUDIO_CONFIG_PATH=
 # Custom name for the startup config (used with CONFIG_STUDIO_CONFIG_PATH)
 # Leave empty if not needed
 CONFIG_STUDIO_SYSTEM_NAME=
+
+# Default Config File
+# Default config file to auto-register when no systems are registered
+# Default: .env
+CONFIG_STUDIO_DEFAULT_CONFIG_FILE=.env
 `;
     }
     

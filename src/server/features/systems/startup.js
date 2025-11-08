@@ -109,11 +109,11 @@ function getStartupConfig() {
 }
 
 /**
- * Register Config Studio itself (default .env file) as "System Settings" if not already registered
+ * Register Config Studio itself (.config-studio.env file) as "System Settings" if not already registered
  * System Settings is stored separately from other systems
  * @param {string} systemSettingsPath - Path to system settings file
  * @param {string} projectRoot - Project root directory
- * @param {string} defaultEnvPath - Path to default .env file
+ * @param {string} defaultEnvPath - Path to .config-studio.env file
  * @returns {Promise<boolean>} - True if system was registered, false if already exists
  */
 async function registerConfigStudio(systemSettingsPath, projectRoot, defaultEnvPath) {
@@ -143,12 +143,20 @@ async function registerConfigStudio(systemSettingsPath, projectRoot, defaultEnvP
       return true;
     }
 
-    // Check if .env file exists, if not, create an empty one or skip registration
+    // Check if .config-studio.env file exists, if not, create an empty one
     if (!fs.existsSync(absoluteEnvPath)) {
-      console.log(`System Settings: .env file not found at ${absoluteEnvPath}`);
-      console.log(`Creating empty .env file...`);
-      // Create empty .env file
-      fs.writeFileSync(absoluteEnvPath, '# Config Studio Settings\n', 'utf8');
+      console.log(`System Settings: .config-studio.env file not found at ${absoluteEnvPath}`);
+      console.log(`Creating .config-studio.env file...`);
+      // Create empty .config-studio.env file with default configuration
+      const defaultContent = `# Config Studio Configuration
+# This file contains settings for Config Studio itself
+
+# Theme Configuration
+# Available themes: light, cyberpunk, vscode-dark, vscode-light, chatgpt, dracula, nord, monokai, custom
+DEFAULT_THEME=cyberpunk
+`;
+      fs.writeFileSync(absoluteEnvPath, defaultContent, 'utf8');
+      console.log(`Created .config-studio.env with default configuration`);
     }
 
     // Register as "System Settings"

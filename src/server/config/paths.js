@@ -26,7 +26,7 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-const ENV_FILE_PATH = path.join(PROJECT_ROOT, '.env');
+const ENV_FILE_PATH = path.join(PROJECT_ROOT, '.config-studio.env');
 const SYSTEMS_REGISTRY_PATH = path.join(DATA_DIR, 'systems-registry.json');
 const SYSTEM_SETTINGS_PATH = path.join(DATA_DIR, 'system-settings.json');
 // Public directory is in the package, not in the project root

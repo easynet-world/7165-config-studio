@@ -4,8 +4,8 @@
  * Config Studio Server Entry Point
  */
 
-// Load environment variables from .env file
-require('dotenv').config();
+// Load environment variables from .config-studio.env file
+require('dotenv').config({ path: '.config-studio.env' });
 
 const path = require('path');
 const http = require('http');
@@ -25,7 +25,7 @@ async function startServer() {
   const oldRegistryPath = path.join(PROJECT_ROOT, '.systems-registry.json');
   await migrateRegistryIfNeeded(oldRegistryPath, SYSTEMS_REGISTRY_PATH);
 
-  // Register Config Studio itself (default .env file) as "System Settings" if not already registered
+  // Register Config Studio itself (.config-studio.env file) as "System Settings" if not already registered
   await registerConfigStudio(SYSTEM_SETTINGS_PATH, PROJECT_ROOT, ENV_FILE_PATH);
 
         // Register config file from startup configuration if provided
@@ -69,7 +69,7 @@ async function startServer() {
     console.log(`Config Studio running on http://localhost:${PORT}`);
     console.log(`WebSocket server ready for real-time updates`);
     console.log(`File monitoring active - changes will be notified automatically`);
-    console.log(`Make sure you have a .env file in the project root`);
+    console.log(`Config Studio configuration: .config-studio.env`);
     if (startupConfig) {
       console.log(`Startup config registered: ${startupConfig.configPath}`);
     }

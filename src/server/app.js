@@ -28,7 +28,7 @@ function createApp() {
   app.use('/api/systems', createSystemsRoutes(SYSTEMS_REGISTRY_PATH, SYSTEM_SETTINGS_PATH, PROJECT_ROOT));
   app.use('/api/settings', createSettingsRoutes(ENV_FILE_PATH, SYSTEMS_REGISTRY_PATH, SYSTEM_SETTINGS_PATH, PROJECT_ROOT));
 
-  // Config endpoint - serves configuration from .env
+  // Config endpoint - serves configuration from .config-studio.env
   app.get('/api/config', (req, res) => {
     res.json({
       defaultTheme: process.env.DEFAULT_THEME || 'cyberpunk'

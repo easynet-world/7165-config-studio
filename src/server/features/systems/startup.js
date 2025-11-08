@@ -80,6 +80,7 @@ async function registerStartupSystem(registryPath, projectRoot, configPath, syst
  */
 function getStartupConfig() {
   // Check environment variable first
+  // Backward compatibility: also supports DOTENV_UI_* variables
   const envConfigPath = process.env.CONFIG_STUDIO_CONFIG_PATH || process.env.DOTENV_UI_CONFIG_PATH;
   const envSystemName = process.env.CONFIG_STUDIO_SYSTEM_NAME || process.env.DOTENV_UI_SYSTEM_NAME;
 
@@ -171,13 +172,13 @@ DEFAULT_THEME=cyberpunk
 # Server Configuration
 # Port number for Config Studio web interface (type:number, min:1, max:65535)
 # Default: 8880
-DOTENV_UI_PORT=8880
+CONFIG_STUDIO_PORT=8880
 
 # Data Directory Configuration
 # Directory where Config Studio stores its registry and settings
 # Can be relative (to current directory) or absolute path
 # Default: ./data
-DOTENV_UI_DATA_DIR=data
+CONFIG_STUDIO_DATA_DIR=data
 
 # Startup Configuration
 # Automatically register a config file when Config Studio starts

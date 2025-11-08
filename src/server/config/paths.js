@@ -13,12 +13,14 @@ const PROJECT_ROOT = process.cwd();
 // __dirname is src/server/config, so go up 3 levels to reach package root
 const PACKAGE_ROOT = path.join(__dirname, '../../..');
 
-// Data directory - configurable via DOTENV_UI_DATA_DIR environment variable
+// Data directory - configurable via CONFIG_STUDIO_DATA_DIR environment variable
 // Defaults to 'data' folder in project root
-const DATA_DIR = process.env.DOTENV_UI_DATA_DIR 
-  ? (path.isAbsolute(process.env.DOTENV_UI_DATA_DIR) 
-      ? process.env.DOTENV_UI_DATA_DIR 
-      : path.join(PROJECT_ROOT, process.env.DOTENV_UI_DATA_DIR))
+// Backward compatibility: also supports DOTENV_UI_DATA_DIR
+const dataDirEnv = process.env.CONFIG_STUDIO_DATA_DIR || process.env.DOTENV_UI_DATA_DIR;
+const DATA_DIR = dataDirEnv
+  ? (path.isAbsolute(dataDirEnv) 
+      ? dataDirEnv 
+      : path.join(PROJECT_ROOT, dataDirEnv))
   : path.join(PROJECT_ROOT, 'data');
 
 // Ensure data directory exists

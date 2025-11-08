@@ -1,6 +1,7 @@
 /**
  * Port configuration utility
- * Priority: command-line arg > DOTENV_UI_PORT > DOTENV_UI_SETTINGS > PORT > 8880
+ * Priority: command-line arg > CONFIG_STUDIO_PORT > CONFIG_STUDIO_SETTINGS > PORT > 8880
+ * Backward compatibility: also supports DOTENV_UI_PORT and DOTENV_UI_SETTINGS
  */
 
 function getPort() {
@@ -13,19 +14,23 @@ function getPort() {
     }
   }
   
-  // Check for DOTENV_UI_PORT environment variable (preferred for port)
-  if (process.env.DOTENV_UI_PORT) {
-    const port = parseInt(process.env.DOTENV_UI_PORT, 10);
+  // Check for CONFIG_STUDIO_PORT environment variable (preferred for port)
+  // Backward compatibility: also check DOTENV_UI_PORT
+  const portEnv = process.env.CONFIG_STUDIO_PORT || process.env.DOTENV_UI_PORT;
+  if (portEnv) {
+    const port = parseInt(portEnv, 10);
     if (!isNaN(port) && port > 0 && port <= 65535) {
       return port;
     }
   }
   
-  // Check for DOTENV_UI_SETTINGS (can be a JSON object or just port number)
-  if (process.env.DOTENV_UI_SETTINGS) {
+  // Check for CONFIG_STUDIO_SETTINGS (can be a JSON object or just port number)
+  // Backward compatibility: also check DOTENV_UI_SETTINGS
+  const settingsEnv = process.env.CONFIG_STUDIO_SETTINGS || process.env.DOTENV_UI_SETTINGS;
+  if (settingsEnv) {
     try {
       // Try parsing as JSON first
-      const settings = JSON.parse(process.env.DOTENV_UI_SETTINGS);
+      const settings = JSON.parse(settingsEnv);
       if (settings.port) {
         const port = parseInt(settings.port, 10);
         if (!isNaN(port) && port > 0 && port <= 65535) {
@@ -34,7 +39,7 @@ function getPort() {
       }
     } catch (e) {
       // If not JSON, try parsing as a port number directly
-      const port = parseInt(process.env.DOTENV_UI_SETTINGS, 10);
+      const port = parseInt(settingsEnv, 10);
       if (!isNaN(port) && port > 0 && port <= 65535) {
         return port;
       }

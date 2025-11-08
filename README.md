@@ -28,7 +28,7 @@ That's it! Your configuration files will appear in the browser.
 | **Basic usage** | `npm install -g config-studio`<br>`cd ~/my-project`<br>`config-studio` |
 | **Custom port** | `config-studio --port 3000` |
 | **Local install** | `npm install config-studio`<br>`npx config-studio` |
-| **Environment port** | `DOTENV_UI_PORT=8080 config-studio` |
+| **Environment port** | `CONFIG_STUDIO_PORT=8080 config-studio` |
 
 ## How It Works
 
@@ -148,7 +148,7 @@ When no system is selected in the UI, Config Studio uses the default `.env` file
 |--------|---------|------|
 | **Default** | `config-studio` | 8880 |
 | **Command-line** | `config-studio --port 8080` | 8080 |
-| **Environment** | `DOTENV_UI_PORT=8080 config-studio` | 8080 |
+| **Environment** | `CONFIG_STUDIO_PORT=8080 config-studio` | 8080 |
 
 ### Startup Config Registration
 
@@ -170,8 +170,8 @@ The systems registry is stored in a `data` folder by default. You can configure 
 | Method | Command | Location |
 |--------|---------|----------|
 | **Default** | `config-studio` | `./data/systems-registry.json` |
-| **Environment (relative)** | `DOTENV_UI_DATA_DIR=custom-data config-studio` | `./custom-data/systems-registry.json` |
-| **Environment (absolute)** | `DOTENV_UI_DATA_DIR=/var/lib/config-studio config-studio` | `/var/lib/config-studio/systems-registry.json` |
+| **Environment (relative)** | `CONFIG_STUDIO_DATA_DIR=custom-data config-studio` | `./custom-data/systems-registry.json` |
+| **Environment (absolute)** | `CONFIG_STUDIO_DATA_DIR=/var/lib/config-studio config-studio` | `/var/lib/config-studio/systems-registry.json` |
 
 The data directory is automatically created if it doesn't exist.
 

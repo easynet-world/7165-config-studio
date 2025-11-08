@@ -30,7 +30,13 @@ function getFormatHandler(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   
   // Special case: .env files don't have an extension, the filename itself is .env
-  if (basename === '.env' || basename.endsWith('.env')) {
+  // Also support .env.* files like .env.config-studio, .env.local, etc.
+  if (basename === '.env' || basename.startsWith('.env.')) {
+    return FORMAT_REGISTRY['.env'] || null;
+  }
+  
+  // Check if basename ends with .env (for files like config.env, settings.env, etc.)
+  if (basename.endsWith('.env')) {
     return FORMAT_REGISTRY['.env'] || null;
   }
   

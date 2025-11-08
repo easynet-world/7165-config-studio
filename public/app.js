@@ -543,6 +543,11 @@ class SettingsApp {
             
             this.renderMainTabs();
             this.renderSystemSubTabs();
+            
+            // If on systems tab and no systems, show empty state
+            if (this.currentMainTab === 'systems' && this.systems.length === 0) {
+                this.showEmptySystemsState();
+            }
         } catch (error) {
             console.error('Error loading systems:', error);
             this.systems = [];
@@ -551,6 +556,11 @@ class SettingsApp {
             this.renderMainTabs();
             this.renderSystemSubTabs();
             this.updateConfigPathDisplay();
+            
+            // If on systems tab and no systems, show empty state
+            if (this.currentMainTab === 'systems' && this.systems.length === 0) {
+                this.showEmptySystemsState();
+            }
         }
     }
 
@@ -681,6 +691,16 @@ class SettingsApp {
             this.renderMainTabs();
             this.renderSystemSubTabs();
             
+            // If no systems registered, show empty state
+            if (this.systems.length === 0) {
+                this.resetStateForSystemSwitch();
+                this.currentSystemName = null;
+                this.currentSystem = null;
+                this.updateConfigPathDisplay();
+                this.showEmptySystemsState();
+                return;
+            }
+            
             // If no system selected, select the first one
             if (!this.currentSystemName || this.currentSystemName === 'System Settings') {
                 if (this.systems.length > 0) {
@@ -698,6 +718,37 @@ class SettingsApp {
         }
     }
 
+    /**
+     * Show empty state when no systems are registered
+     */
+    showEmptySystemsState() {
+        const tabContent = document.getElementById('tabContent');
+        if (!tabContent) return;
+        
+        // Clear any existing content
+        tabContent.innerHTML = '';
+        
+        // Get default config file from server or use .env
+        const defaultConfigFile = '.env'; // Could be fetched from server config if needed
+        
+        const emptyState = document.createElement('div');
+        emptyState.className = 'empty-state';
+        emptyState.innerHTML = `
+            <div class="empty-state-content">
+                <h3>No Systems Registered</h3>
+                <p>No configuration systems are currently registered.</p>
+                <p>Config Studio will automatically register <code>${defaultConfigFile}</code> if it exists in the current folder.</p>
+                <p>You can also manually register systems by clicking the <strong>"+"</strong> button in the header.</p>
+            </div>
+        `;
+        tabContent.appendChild(emptyState);
+        
+        // Hide action buttons when showing empty state
+        const actionButtons = document.querySelector('.action-buttons');
+        if (actionButtons) {
+            actionButtons.style.display = 'none';
+        }
+    }
 
     /**
      * Reset all state when switching systems to ensure complete isolation

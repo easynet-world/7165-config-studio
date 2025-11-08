@@ -41,7 +41,7 @@ function ensureConfigFile() {
 
 # Theme Configuration
 # Available themes: light, cyberpunk, vscode-dark, vscode-light, chatgpt, dracula, nord, monokai, custom
-DEFAULT_THEME=cyberpunk
+CONFIG_STUDIO_THEME=cyberpunk
 
 # Server Configuration
 # Port number for Config Studio web interface (type:number, min:1, max:65535)

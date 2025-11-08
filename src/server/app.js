@@ -31,7 +31,7 @@ function createApp() {
   // Config endpoint - serves configuration from .env.config-studio
   app.get('/api/config', (req, res) => {
     res.json({
-      defaultTheme: process.env.DEFAULT_THEME || 'cyberpunk'
+      defaultTheme: process.env.CONFIG_STUDIO_THEME || process.env.DEFAULT_THEME || 'cyberpunk'
     });
   });
 

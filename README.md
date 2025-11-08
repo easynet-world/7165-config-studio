@@ -1,12 +1,8 @@
 # Config Studio
 
 [![npm version (unscoped)](https://img.shields.io/npm/v/config-studio.svg)](https://www.npmjs.com/package/config-studio)
-[![npm downloads](https://img.shields.io/npm/dm/@easynet/config-studio.svg)](https://www.npmjs.com/package/@easynet/config-studio)
 [![Node.js version](https://img.shields.io/node/v/@easynet/config-studio.svg)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/easynet-world/7165-config-studio.svg?style=social&label=Star)](https://github.com/easynet-world/7165-config-studio)
-[![GitHub issues](https://img.shields.io/github/issues/easynet-world/7165-config-studio.svg)](https://github.com/easynet-world/7165-config-studio/issues)
-[![GitHub forks](https://img.shields.io/github/forks/easynet-world/7165-config-studio.svg?style=social)](https://github.com/easynet-world/7165-config-studio/network)
 
 > ## The simplest way to manage configurations.
 

@@ -471,9 +471,6 @@ class SettingsApp {
         });
 
         // System management modal
-        document.getElementById('manageSystemsBtn').addEventListener('click', () => {
-            this.openSystemModal();
-        });
 
         document.getElementById('modalCloseBtn').addEventListener('click', () => {
             this.closeSystemModal();
@@ -610,15 +607,6 @@ class SettingsApp {
         const tabsContainer = document.getElementById('systemTabs');
         tabsContainer.innerHTML = '';
         
-        // If no systems, show placeholder
-        if (this.systems.length === 0) {
-            const placeholder = document.createElement('div');
-            placeholder.className = 'system-tab-placeholder';
-            placeholder.textContent = 'No systems registered';
-            tabsContainer.appendChild(placeholder);
-            return;
-        }
-        
         // Add all registered systems as sub-tabs
         this.systems.forEach(system => {
             const tab = document.createElement('div');
@@ -631,9 +619,27 @@ class SettingsApp {
             
             tab.innerHTML = `
                 <span class="system-tab-name">${this.escapeHtml(system.name)}</span>
+                <button class="system-tab-delete" title="Delete system" data-system-name="${this.escapeHtml(system.name)}">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
             `;
             
-            tab.addEventListener('click', () => {
+            // Handle delete button click
+            const deleteBtn = tab.querySelector('.system-tab-delete');
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent tab switch
+                this.deleteSystem(system.name);
+            });
+            
+            // Handle tab click (switch system)
+            tab.addEventListener('click', (e) => {
+                // Don't switch if clicking the delete button
+                if (e.target.closest('.system-tab-delete')) {
+                    return;
+                }
+                
                 if (system.name !== this.currentSystemName) {
                     // Check for unsaved changes
                     if (this.hasChanges) {
@@ -657,6 +663,24 @@ class SettingsApp {
             
             tabsContainer.appendChild(tab);
         });
+        
+        // Add [+] tab for adding new systems
+        const addTab = document.createElement('div');
+        addTab.className = 'system-tab system-tab-add';
+        addTab.innerHTML = `
+            <span class="system-tab-name">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+                <span>Add System</span>
+            </span>
+        `;
+        
+        addTab.addEventListener('click', () => {
+            this.openSystemModal();
+        });
+        
+        tabsContainer.appendChild(addTab);
     }
     
     switchMainTab(mainTab) {
@@ -738,7 +762,7 @@ class SettingsApp {
                 <h3>No Systems Registered</h3>
                 <p>No configuration systems are currently registered.</p>
                 <p>Config Studio will automatically register <code>${defaultConfigFile}</code> if it exists in the current folder.</p>
-                <p>You can also manually register systems by clicking the <strong>"+"</strong> button in the header.</p>
+                <p>You can also manually register systems by clicking the <strong>"Add System"</strong> tab above.</p>
             </div>
         `;
         tabContent.appendChild(emptyState);

@@ -2,7 +2,7 @@
 
 > **The simplest way to manage configurations.**
 
-![Config Studio](public/images/config-studio.png)
+![Config Studio](https://github.com/easynet-world/7165-config-studio/blob/HEAD/public/images/config-studio.png)
 
 Config Studio is a modern, web-based configuration management tool that provides an intuitive interface for editing and managing configuration files across multiple systems and formats.
 

@@ -11,7 +11,7 @@ const path = require('path');
 const http = require('http');
 const { getPort } = require('./config/port');
 const { createApp } = require('./app');
-const { PROJECT_ROOT, SYSTEMS_REGISTRY_PATH, ENV_FILE_PATH } = require('./config/paths');
+const { PROJECT_ROOT, SYSTEMS_REGISTRY_PATH, SYSTEM_SETTINGS_PATH, ENV_FILE_PATH } = require('./config/paths');
 const { migrateRegistryIfNeeded } = require('./features/systems/migration');
 const { registerStartupSystem, getStartupConfig, registerConfigStudio, registerExampleSystems } = require('./features/systems/startup');
 const { FileWatcher } = require('./features/file-watcher');
@@ -26,7 +26,7 @@ async function startServer() {
   await migrateRegistryIfNeeded(oldRegistryPath, SYSTEMS_REGISTRY_PATH);
 
   // Register Config Studio itself (default .env file) as "System Settings" if not already registered
-  await registerConfigStudio(SYSTEMS_REGISTRY_PATH, PROJECT_ROOT, ENV_FILE_PATH);
+  await registerConfigStudio(SYSTEM_SETTINGS_PATH, PROJECT_ROOT, ENV_FILE_PATH);
 
         // Register config file from startup configuration if provided
         const startupConfig = getStartupConfig();
@@ -54,6 +54,7 @@ async function startServer() {
   // Setup file watcher with WebSocket notification callback
   fileWatcher = new FileWatcher(
     SYSTEMS_REGISTRY_PATH,
+    SYSTEM_SETTINGS_PATH,
     PROJECT_ROOT,
     (message) => {
       // Notify all WebSocket clients about file changes

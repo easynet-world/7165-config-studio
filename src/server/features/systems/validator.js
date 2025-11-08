@@ -4,7 +4,6 @@
 
 const path = require('path');
 const fs = require('fs').promises;
-const { isFormatSupported, getSupportedExtensionsString } = require('../settings/formats');
 
 /**
  * Normalize path to absolute path
@@ -25,7 +24,7 @@ function normalizeToAbsolutePath(configPath, projectRoot) {
  * @param {Object} system - System object to validate
  * @param {string} projectRoot - Project root directory for resolving relative paths
  * @param {boolean} checkFileExists - Whether to check if file exists (default: true)
- * @returns {Object} - Validated system object with id, name, configPath (always absolute), and formatSupported flag
+ * @returns {Object} - Validated system object with name and configPath (always absolute)
  * @throws {Error} - If validation fails
  */
 async function validateSystem(system, projectRoot, checkFileExists = true) {
@@ -52,14 +51,9 @@ async function validateSystem(system, projectRoot, checkFileExists = true) {
     }
   }
   
-  // Check if format is supported (but don't throw error - we'll allow unsupported formats)
-  const formatSupported = isFormatSupported(absolutePath);
-  
   return {
-    id: system.id || `system-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name: system.name.trim(),
-    configPath: absolutePath,
-    formatSupported: formatSupported
+    configPath: absolutePath
   };
 }
 

@@ -44,16 +44,19 @@ function normalizeSystemPaths(systems, projectRoot) {
 
 /**
  * Load systems registry from file and normalize paths
+ * Excludes System Settings (which is stored separately)
  * @param {string} registryPath - Path to the registry file
  * @param {string} projectRoot - Project root directory for resolving relative paths
- * @returns {Promise<Array>} - Array of system objects with absolute paths
+ * @returns {Promise<Array>} - Array of system objects with absolute paths (excluding System Settings)
  */
 async function loadSystemsRegistry(registryPath, projectRoot) {
   try {
     const content = await fs.readFile(registryPath, 'utf-8');
     const systems = JSON.parse(content);
+    // Filter out System Settings (it's stored separately)
+    const filteredSystems = systems.filter(s => s.name !== 'System Settings');
     // Normalize all paths to absolute
-    return normalizeSystemPaths(systems, projectRoot);
+    return normalizeSystemPaths(filteredSystems, projectRoot);
   } catch (error) {
     if (error.code === 'ENOENT') {
       // File doesn't exist, return empty registry
@@ -61,6 +64,40 @@ async function loadSystemsRegistry(registryPath, projectRoot) {
     }
     throw error;
   }
+}
+
+/**
+ * Load System Settings from separate file
+ * @param {string} systemSettingsPath - Path to the system settings file
+ * @param {string} projectRoot - Project root directory for resolving relative paths
+ * @returns {Promise<Object|null>} - System Settings object with absolute path, or null if not found
+ */
+async function loadSystemSettings(systemSettingsPath, projectRoot) {
+  try {
+    const content = await fs.readFile(systemSettingsPath, 'utf-8');
+    const systemSettings = JSON.parse(content);
+    // Normalize path to absolute
+    const normalized = normalizeSystemPaths([systemSettings], projectRoot);
+    return normalized[0] || null;
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      // File doesn't exist, return null
+      return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Save System Settings to separate file
+ * @param {string} systemSettingsPath - Path to the system settings file
+ * @param {Object} systemSettings - System Settings object to save
+ * @returns {Promise<void>}
+ */
+async function saveSystemSettings(systemSettingsPath, systemSettings) {
+  // Ensure directory exists before writing
+  await ensureDirectoryExists(systemSettingsPath);
+  await fs.writeFile(systemSettingsPath, JSON.stringify(systemSettings, null, 2), 'utf-8');
 }
 
 /**
@@ -77,6 +114,8 @@ async function saveSystemsRegistry(registryPath, systems) {
 
 module.exports = {
   loadSystemsRegistry,
-  saveSystemsRegistry
+  saveSystemsRegistry,
+  loadSystemSettings,
+  saveSystemSettings
 };
 

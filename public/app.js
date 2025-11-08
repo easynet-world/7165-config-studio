@@ -85,10 +85,11 @@ class SettingsApp {
         this.hasChanges = false;
         this.searchQuery = '';
         this.systems = [];
-        this.currentSystemId = null;
+        this.systemSettings = null; // System Settings stored separately
+        this.currentMainTab = 'system-settings'; // 'system-settings' or 'systems'
+        this.currentSystemName = null;
         this.currentSystem = null; // Store current system object for path display
-        this.systemSettingsId = null; // ID of "System Settings" system
-        this.editingSystemId = null;
+        this.editingSystemName = null;
         this.rawMode = false;
         this.rawContent = '';
         this.originalRawContent = '';
@@ -102,29 +103,21 @@ class SettingsApp {
         this.setupEventListeners();
         // Load systems first, then settings (which will auto-select first system if needed)
         await this.loadSystems();
-        // loadSettings will be called automatically if a system is auto-selected in renderSystemSelector
-        // But we also need to call it here if a system was already selected or auto-selected
-        if (this.currentSystemId || this.systems.length > 0) {
-            if (!this.currentSystemId) {
-                // Auto-select System Settings if available, otherwise first system
-                if (this.systemSettingsId) {
-                    this.currentSystemId = this.systemSettingsId;
-                    // Load all systems to get System Settings
-                    const response = await fetch('/api/systems');
-                    if (response.ok) {
-                        const allSystems = await response.json();
-                        this.currentSystem = allSystems.find(s => s.id === this.systemSettingsId);
-                    }
-                    this.updateSystemSettingsButton();
-                } else if (this.systems.length > 0) {
-                    this.currentSystemId = this.systems[0].id;
-                    this.currentSystem = this.systems[0];
-                    this.renderSystemSelector(); // Update tabs to show active state
-                }
-            }
-            // Update path display before loading settings
+        // Initialize main tabs
+        this.renderMainTabs();
+        // Auto-select System Settings on startup
+        if (this.systemSettings) {
+            this.currentMainTab = 'system-settings';
+            this.currentSystemName = 'System Settings';
+            this.currentSystem = this.systemSettings;
             this.updateConfigPathDisplay();
-            // Always load fresh settings from file on page load
+            await this.loadSettings();
+        } else if (this.systems.length > 0) {
+            // If no System Settings, switch to Systems tab and select first system
+            this.currentMainTab = 'systems';
+            this.currentSystemName = this.systems[0].name;
+            this.currentSystem = this.systems[0];
+            this.updateConfigPathDisplay();
             await this.loadSettings();
         }
         
@@ -134,7 +127,7 @@ class SettingsApp {
         // Reload settings when page becomes visible again (user switches back to tab)
         // This ensures we always show the most recent configuration from file
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && this.currentSystemId) {
+            if (!document.hidden && this.currentSystemName) {
                 // Page became visible - reload fresh settings from file
                 this.loadSettings();
             }
@@ -164,14 +157,16 @@ class SettingsApp {
                     
                     if (message.type === 'file-changed') {
                         // File changed - reload if it's the current system
-                        if (message.systemId === this.currentSystemId) {
+                        // WebSocket message uses systemName (or systemId for backward compatibility)
+                        const messageSystemName = message.systemName || message.systemId;
+                        if (messageSystemName === this.currentSystemName) {
                             console.log('Config file changed - reloading settings...');
                             this.showSuccess('Configuration file was updated. Reloading...');
                             // Reload settings from file
                             this.loadSettings();
                         } else {
                             // Another system's file changed - just show notification
-                            const system = this.systems.find(s => s.id === message.systemId);
+                            const system = this.systems.find(s => s.name === messageSystemName);
                             if (system) {
                                 console.log(`Config file changed for ${system.name}`);
                             }
@@ -465,11 +460,12 @@ class SettingsApp {
             this.saveSettings();
         });
 
-        // System tab switching is handled in renderSystemSelector() via click events
-
-        // System Settings button (separate from other systems)
-        document.getElementById('systemSettingsBtn').addEventListener('click', () => {
-            this.openSystemSettings();
+        // Main tab switching
+        document.querySelectorAll('.main-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const mainTab = tab.dataset.mainTab;
+                this.switchMainTab(mainTab);
+            });
         });
 
         // System management modal
@@ -530,24 +526,28 @@ class SettingsApp {
             const allSystems = await response.json();
             
             // Separate System Settings from other systems
-            this.systemSettingsId = allSystems.find(s => s.name === 'System Settings')?.id || null;
+            this.systemSettings = allSystems.find(s => s.name === 'System Settings') || null;
             this.systems = allSystems.filter(s => s.name !== 'System Settings');
             
             // Update current system if it's still selected
-            if (this.currentSystemId) {
-                this.currentSystem = allSystems.find(s => s.id === this.currentSystemId);
+            if (this.currentSystemName) {
+                if (this.currentSystemName === 'System Settings') {
+                    this.currentSystem = this.systemSettings;
+                } else {
+                    this.currentSystem = this.systems.find(s => s.name === this.currentSystemName);
+                }
                 this.updateConfigPathDisplay();
             }
             
-            this.renderSystemSelector();
-            this.updateSystemSettingsButton();
+            this.renderMainTabs();
+            this.renderSystemSubTabs();
         } catch (error) {
             console.error('Error loading systems:', error);
             this.systems = [];
-            this.systemSettingsId = null;
+            this.systemSettings = null;
             this.currentSystem = null;
-            this.renderSystemSelector();
-            this.updateSystemSettingsButton();
+            this.renderMainTabs();
+            this.renderSystemSubTabs();
             this.updateConfigPathDisplay();
         }
     }
@@ -575,15 +575,31 @@ class SettingsApp {
         }
     }
 
-    renderSystemSelector() {
+    renderMainTabs() {
+        const mainTabs = document.querySelectorAll('.main-tab');
+        mainTabs.forEach(tab => {
+            if (tab.dataset.mainTab === this.currentMainTab) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
+        
+        // Show/hide system sub-tabs container based on active main tab
+        const systemTabsContainer = document.getElementById('systemTabsContainer');
+        if (this.currentMainTab === 'systems') {
+            systemTabsContainer.style.display = 'block';
+        } else {
+            systemTabsContainer.style.display = 'none';
+        }
+    }
+    
+    renderSystemSubTabs() {
         const tabsContainer = document.getElementById('systemTabs');
         tabsContainer.innerHTML = '';
         
-        // Filter out System Settings - it's handled separately via Settings button
-        const regularSystems = this.systems.filter(s => s.name !== 'System Settings');
-        
         // If no systems, show placeholder
-        if (regularSystems.length === 0) {
+        if (this.systems.length === 0) {
             const placeholder = document.createElement('div');
             placeholder.className = 'system-tab-placeholder';
             placeholder.textContent = 'No systems registered';
@@ -591,28 +607,22 @@ class SettingsApp {
             return;
         }
         
-        // Add all registered systems as tabs (excluding System Settings)
-        regularSystems.forEach(system => {
+        // Add all registered systems as sub-tabs
+        this.systems.forEach(system => {
             const tab = document.createElement('div');
             tab.className = 'system-tab';
-            tab.dataset.systemId = system.id;
+            tab.dataset.systemName = system.name;
             
-            if (system.id === this.currentSystemId) {
+            if (system.name === this.currentSystemName && this.currentMainTab === 'systems') {
                 tab.classList.add('active');
             }
             
-            // Show format indicator for unsupported formats
-            const formatIndicator = system.formatSupported === false 
-                ? '<span class="system-tab-badge" title="Raw editing mode">📄</span>' 
-                : '';
-            
             tab.innerHTML = `
                 <span class="system-tab-name">${this.escapeHtml(system.name)}</span>
-                ${formatIndicator}
             `;
             
             tab.addEventListener('click', () => {
-                if (system.id !== this.currentSystemId) {
+                if (system.name !== this.currentSystemName) {
                     // Check for unsaved changes
                     if (this.hasChanges) {
                         if (!confirm('You have unsaved changes. Switch system anyway?')) {
@@ -623,62 +633,69 @@ class SettingsApp {
                     // Completely reset state before switching
                     this.resetStateForSystemSwitch();
                     
-                    this.currentSystemId = system.id;
+                    this.currentMainTab = 'systems';
+                    this.currentSystemName = system.name;
                     this.currentSystem = system;
                     this.updateConfigPathDisplay();
+                    this.renderMainTabs();
+                    this.renderSystemSubTabs();
                     this.loadSettings();
-                    this.renderSystemSelector(); // Re-render to update active state
                 }
             });
             
             tabsContainer.appendChild(tab);
         });
     }
-
-    /**
-     * Open System Settings (separate from other systems)
-     */
-    async openSystemSettings() {
-        if (!this.systemSettingsId) {
-            this.showError('System Settings not found. Please ensure the default .env file is registered.');
-            return;
+    
+    switchMainTab(mainTab) {
+        if (mainTab === this.currentMainTab) {
+            return; // Already on this tab
         }
         
         // Check for unsaved changes
         if (this.hasChanges) {
-            if (!confirm('You have unsaved changes. Switch to System Settings anyway?')) {
+            if (!confirm('You have unsaved changes. Switch tab anyway?')) {
                 return;
             }
         }
         
-        // Completely reset state before switching
-        this.resetStateForSystemSwitch();
+        this.currentMainTab = mainTab;
         
-        this.currentSystemId = this.systemSettingsId;
-        // Load all systems to get System Settings
-        const response = await fetch('/api/systems');
-        if (response.ok) {
-            const allSystems = await response.json();
-            this.currentSystem = allSystems.find(s => s.id === this.systemSettingsId);
+        if (mainTab === 'system-settings') {
+            // Switch to System Settings
+            if (this.systemSettings) {
+                this.resetStateForSystemSwitch();
+                this.currentSystemName = 'System Settings';
+                this.currentSystem = this.systemSettings;
+                this.updateConfigPathDisplay();
+                this.renderMainTabs();
+                this.loadSettings();
+            } else {
+                this.showError('System Settings not found. Please ensure the default .env file is registered.');
+                return;
+            }
+        } else if (mainTab === 'systems') {
+            // Switch to Systems tab
+            this.renderMainTabs();
+            this.renderSystemSubTabs();
+            
+            // If no system selected, select the first one
+            if (!this.currentSystemName || this.currentSystemName === 'System Settings') {
+                if (this.systems.length > 0) {
+                    this.resetStateForSystemSwitch();
+                    this.currentSystemName = this.systems[0].name;
+                    this.currentSystem = this.systems[0];
+                    this.updateConfigPathDisplay();
+                    this.renderSystemSubTabs();
+                    this.loadSettings();
+                }
+            } else {
+                // Just update the UI to show the selected system
+                this.renderSystemSubTabs();
+            }
         }
-        this.updateConfigPathDisplay();
-        await this.loadSettings();
-        this.updateSystemSettingsButton();
     }
 
-    /**
-     * Update System Settings button state
-     */
-    updateSystemSettingsButton() {
-        const settingsBtn = document.getElementById('systemSettingsBtn');
-        if (!settingsBtn) return;
-        
-        if (this.currentSystemId === this.systemSettingsId) {
-            settingsBtn.classList.add('active');
-        } else {
-            settingsBtn.classList.remove('active');
-        }
-    }
 
     /**
      * Reset all state when switching systems to ensure complete isolation
@@ -713,13 +730,14 @@ class SettingsApp {
     async loadSettings() {
         try {
             // Require a system to be selected
-            if (!this.currentSystemId) {
+            if (!this.currentSystemName) {
                 // If no system selected but systems exist, select the first one
                 if (this.systems.length > 0) {
-                    this.currentSystemId = this.systems[0].id;
+                    this.currentSystemName = this.systems[0].name;
                     this.currentSystem = this.systems[0];
                     this.updateConfigPathDisplay();
-                    this.renderSystemSelector(); // Update tabs to show active state
+                    this.renderMainTabs();
+                    this.renderSystemSubTabs();
                 } else {
                     // No systems registered yet
                     this.settings = {};
@@ -732,7 +750,7 @@ class SettingsApp {
             
             // Build URL with system parameter (always required now)
             // Always use timestamp to ensure we get fresh data from file (no browser cache)
-            const url = `/api/settings?t=${Date.now()}&system=${encodeURIComponent(this.currentSystemId)}`;
+            const url = `/api/settings?t=${Date.now()}&system=${encodeURIComponent(this.currentSystemName)}`;
             
             // Always fetch fresh data from file - no caching
             // The server always reads from file system, and we prevent browser caching
@@ -783,7 +801,6 @@ class SettingsApp {
             this.sectionOrder = data.sectionOrder || Object.keys(this.settings).sort();
             this.originalSettings = JSON.parse(JSON.stringify(this.settings));
             this.hasChanges = false; // Reset changes flag when loading new system
-            this.updateSystemSettingsButton(); // Update settings button state
             this.render();
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -808,7 +825,7 @@ class SettingsApp {
         this.renderContent();
         
         // Show message if no settings available
-        if (Object.keys(this.settings).length === 0 && this.currentSystemId && !this.rawMode) {
+        if (Object.keys(this.settings).length === 0 && this.currentSystemName && !this.rawMode) {
             const tabContent = document.getElementById('tabContent');
             // Remove any existing content first
             const existingEmptyState = tabContent.querySelector('.empty-state');
@@ -910,7 +927,7 @@ class SettingsApp {
 
         if (Object.keys(this.settings).length === 0) {
             // Don't show error if we have a system selected - it might just be empty
-            if (this.currentSystemId) {
+            if (this.currentSystemName) {
                 const emptyState = document.createElement('div');
                 emptyState.className = 'empty-state';
                 emptyState.innerHTML = `
@@ -1339,7 +1356,7 @@ class SettingsApp {
 
     async saveSettings() {
         // System is always required now
-        if (!this.currentSystemId) {
+        if (!this.currentSystemName) {
             this.showError('No system selected. Please select a system first.');
             return;
         }
@@ -1347,7 +1364,7 @@ class SettingsApp {
         // Handle raw mode saving
         if (this.rawMode) {
             try {
-                const url = `/api/settings?system=${encodeURIComponent(this.currentSystemId)}`;
+                const url = `/api/settings?system=${encodeURIComponent(this.currentSystemName)}`;
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
@@ -1399,7 +1416,7 @@ class SettingsApp {
             };
             
             // Build URL with system parameter (always required)
-            const url = `/api/settings?system=${encodeURIComponent(this.currentSystemId)}`;
+            const url = `/api/settings?system=${encodeURIComponent(this.currentSystemName)}`;
             
             const response = await fetch(url, {
                 method: 'POST',
@@ -1448,7 +1465,7 @@ class SettingsApp {
     closeSystemModal() {
         document.getElementById('systemModal').classList.remove('active');
         this.hideSystemForm();
-        this.editingSystemId = null;
+        this.editingSystemName = null;
     }
 
     renderSystemsList() {
@@ -1472,8 +1489,8 @@ class SettingsApp {
                     <div class="system-item-path">${this.escapeHtml(system.configPath)}</div>
                 </div>
                 <div class="system-item-actions">
-                    <button class="btn btn-small btn-cancel edit-system-btn" data-id="${system.id}">Edit</button>
-                    <button class="btn btn-small btn-danger delete-system-btn" data-id="${system.id}">Delete</button>
+                    <button class="btn btn-small btn-cancel edit-system-btn" data-name="${system.name}">Edit</button>
+                    <button class="btn btn-small btn-danger delete-system-btn" data-name="${system.name}">Delete</button>
                 </div>
             `;
             list.appendChild(item);
@@ -1482,15 +1499,15 @@ class SettingsApp {
         // Add event listeners
         list.querySelectorAll('.edit-system-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const systemId = e.target.dataset.id;
-                this.editSystem(systemId);
+                const systemName = e.target.dataset.name;
+                this.editSystem(systemName);
             });
         });
         
         list.querySelectorAll('.delete-system-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const systemId = e.target.dataset.id;
-                this.deleteSystem(systemId);
+                const systemName = e.target.dataset.name;
+                this.deleteSystem(systemName);
             });
         });
     }
@@ -1505,12 +1522,12 @@ class SettingsApp {
             formTitle.textContent = 'Edit System';
             nameInput.value = system.name;
             pathInput.value = system.configPath;
-            this.editingSystemId = system.id;
+            this.editingSystemName = system.name;
         } else {
             formTitle.textContent = 'Add System';
             nameInput.value = '';
             pathInput.value = '';
-            this.editingSystemId = null;
+            this.editingSystemName = null;
         }
         
         form.style.display = 'block';
@@ -1522,17 +1539,17 @@ class SettingsApp {
         document.getElementById('addSystemBtn').style.display = 'block';
         document.getElementById('systemNameInput').value = '';
         document.getElementById('systemPathInput').value = '';
-        this.editingSystemId = null;
+        this.editingSystemName = null;
     }
 
-    editSystem(systemId) {
+    editSystem(systemName) {
         // Don't allow editing System Settings through the modal
-        if (systemId === this.systemSettingsId) {
+        if (systemName === 'System Settings') {
             this.showError('System Settings cannot be edited through this interface.');
             return;
         }
         
-        const system = this.systems.find(s => s.id === systemId);
+        const system = this.systems.find(s => s.name === systemName);
         if (system) {
             this.showSystemForm(system);
         }
@@ -1566,9 +1583,9 @@ class SettingsApp {
         
         try {
             let response;
-            if (this.editingSystemId) {
+            if (this.editingSystemName) {
                 // Update existing system
-                response = await fetch(`/api/systems/${this.editingSystemId}`, {
+                response = await fetch(`/api/systems/${encodeURIComponent(this.editingSystemName)}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1596,17 +1613,17 @@ class SettingsApp {
             this.hideSystemForm();
             this.showSuccess('System saved successfully!');
             // Refresh the system tabs in the main UI
-            this.renderSystemSelector();
-            this.updateSystemSettingsButton();
+            this.renderMainTabs();
+            this.renderSystemSubTabs();
         } catch (error) {
             console.error('Error saving system:', error);
             this.showError(error.message || 'Failed to save system. Please try again.');
         }
     }
 
-    async deleteSystem(systemId) {
+    async deleteSystem(systemName) {
         // Don't allow deleting System Settings
-        if (systemId === this.systemSettingsId) {
+        if (systemName === 'System Settings') {
             this.showError('System Settings cannot be deleted.');
             return;
         }
@@ -1616,40 +1633,46 @@ class SettingsApp {
         }
         
         try {
-            const response = await fetch(`/api/systems/${systemId}`, {
+            const response = await fetch(`/api/systems/${encodeURIComponent(systemName)}`, {
                 method: 'DELETE'
             });
             
             if (!response.ok) throw new Error('Failed to delete system');
             
             // If deleted system was currently selected, switch to System Settings or first available system
-            if (this.currentSystemId === systemId) {
+            if (this.currentSystemName === systemName) {
                 await this.loadSystems();
-                if (this.systemSettingsId) {
+                const allSystems = await fetch('/api/systems').then(r => r.json());
+                const systemSettings = allSystems.find(s => s.name === 'System Settings');
+                if (systemSettings) {
                     // Switch to System Settings
-                    this.currentSystemId = this.systemSettingsId;
-                    this.updateSystemSettingsButton();
+                    this.currentSystemName = 'System Settings';
+                    this.currentSystem = systemSettings;
+                    this.renderMainTabs();
+            this.renderSystemSubTabs();
                     await this.loadSettings();
                 } else if (this.systems.length > 0) {
-                    this.currentSystemId = this.systems[0].id;
-                    this.renderSystemSelector(); // Update tabs
-                    this.updateSystemSettingsButton();
+                    this.currentSystemName = this.systems[0].name;
+                    this.currentSystem = this.systems[0];
+                    this.renderMainTabs();
+                    this.renderSystemSubTabs();
                     await this.loadSettings();
                 } else {
-                    this.currentSystemId = null;
+                    this.currentSystemName = null;
+                    this.currentSystem = null;
                     this.settings = {};
                     this.sectionOrder = [];
                     this.originalSettings = {};
-                    this.renderSystemSelector(); // Update tabs
-                    this.updateSystemSettingsButton();
+                    this.renderMainTabs();
+                    this.renderSystemSubTabs();
                     this.render();
                 }
             } else {
                 await this.loadSystems();
             }
             this.renderSystemsList();
-            this.renderSystemSelector(); // Update tabs after deletion
-            this.updateSystemSettingsButton();
+            this.renderMainTabs();
+            this.renderSystemSubTabs();
             this.showSuccess('System deleted successfully!');
         } catch (error) {
             console.error('Error deleting system:', error);

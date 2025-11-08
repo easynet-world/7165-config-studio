@@ -6,13 +6,13 @@ const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
 const { getFormatHandler, isFormatSupported, getSupportedExtensionsString } = require('./formats');
-const { loadSystemsRegistry } = require('../systems/registry');
+const { loadSystemsRegistry, loadSystemSettings } = require('../systems/registry');
 
-function createSettingsRoutes(envFilePath, registryPath, projectRoot) {
+function createSettingsRoutes(envFilePath, registryPath, systemSettingsPath, projectRoot) {
   const router = express.Router();
 
   // GET /api/settings - Get all settings organized by sections
-  // Supports ?system=<systemId> query parameter
+  // Supports ?system=<systemName> query parameter
   // Always reads fresh from config file (no caching)
   router.get('/', async (req, res) => {
     try {
@@ -28,17 +28,26 @@ function createSettingsRoutes(envFilePath, registryPath, projectRoot) {
         return res.status(400).json({ error: 'System parameter is required. Please select a system.' });
       }
       
-      const systems = await loadSystemsRegistry(registryPath, projectRoot);
-      const system = systems.find(s => s.id === req.query.system);
+      // Check System Settings first (stored separately)
+      const systemSettings = await loadSystemSettings(systemSettingsPath, projectRoot);
+      let system = null;
+      
+      if (systemSettings && systemSettings.name === req.query.system) {
+        system = systemSettings;
+      } else {
+        // Check regular systems
+        const systems = await loadSystemsRegistry(registryPath, projectRoot);
+        system = systems.find(s => s.name === req.query.system);
+      }
+      
       if (!system) {
         return res.status(404).json({ error: 'System not found' });
       }
       
       const configFilePath = system.configPath;
-      const formatSupported = system.formatSupported !== false; // Default to true for backward compatibility
       
-      // Check if format is supported
-      if (!formatSupported || !isFormatSupported(configFilePath)) {
+      // Check if format is supported (determine on the fly)
+      if (!isFormatSupported(configFilePath)) {
         // For unsupported formats, return raw file content
         try {
           const content = await fs.readFile(configFilePath, 'utf-8');
@@ -97,14 +106,23 @@ function createSettingsRoutes(envFilePath, registryPath, projectRoot) {
         return res.status(400).json({ error: 'System parameter is required. Please select a system.' });
       }
       
-      const systems = await loadSystemsRegistry(registryPath, projectRoot);
-      const system = systems.find(s => s.id === req.query.system);
+      // Check System Settings first (stored separately)
+      const systemSettings = await loadSystemSettings(systemSettingsPath, projectRoot);
+      let system = null;
+      
+      if (systemSettings && systemSettings.name === req.query.system) {
+        system = systemSettings;
+      } else {
+        // Check regular systems
+        const systems = await loadSystemsRegistry(registryPath, projectRoot);
+        system = systems.find(s => s.name === req.query.system);
+      }
+      
       if (!system) {
         return res.status(404).json({ error: 'System not found' });
       }
       
       const configFilePath = system.configPath;
-      const formatSupported = system.formatSupported !== false; // Default to true for backward compatibility
       
       const data = req.body;
       
@@ -123,8 +141,8 @@ function createSettingsRoutes(envFilePath, registryPath, projectRoot) {
         return res.json({ success: true, message: 'Configuration file saved successfully' });
       }
       
-      // Check if format is supported for structured editing
-      if (!formatSupported || !isFormatSupported(configFilePath)) {
+      // Check if format is supported for structured editing (determine on the fly)
+      if (!isFormatSupported(configFilePath)) {
         return res.status(400).json({ 
           error: `Unsupported configuration file format. Please use raw editing mode. Currently only properties-based formats are supported (${getSupportedExtensionsString()})` 
         });

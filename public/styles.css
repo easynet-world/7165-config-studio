@@ -35,10 +35,56 @@ body {
     gap: 12px;
 }
 
-/* System Tabs */
-.system-tabs-container {
+/* Main Tabs */
+.main-tabs-container {
     border-bottom: 1px solid var(--border-primary);
     background: var(--bg-tertiary);
+}
+
+.main-tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    padding: 0 8px;
+    min-height: 48px;
+}
+
+.main-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    position: relative;
+    user-select: none;
+}
+
+.main-tab:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.main-tab.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+    background: var(--bg-secondary);
+}
+
+.main-tab-name {
+    display: flex;
+    align-items: center;
+}
+
+/* System Sub-tabs (shown when Systems main tab is active) */
+.system-tabs-container {
+    border-bottom: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
     overflow-x: auto;
     overflow-y: hidden;
 }
@@ -48,15 +94,15 @@ body {
     align-items: stretch;
     gap: 2px;
     padding: 0 8px;
-    min-height: 48px;
+    min-height: 40px;
 }
 
 .system-tab {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 20px;
-    font-size: 14px;
+    padding: 10px 16px;
+    font-size: 13px;
     color: var(--text-secondary);
     cursor: pointer;
     border-bottom: 2px solid transparent;
@@ -74,7 +120,7 @@ body {
 .system-tab.active {
     color: var(--accent-primary);
     border-bottom-color: var(--accent-primary);
-    background: var(--bg-secondary);
+    background: var(--bg-tertiary);
     font-weight: 500;
 }
 
@@ -89,9 +135,9 @@ body {
 }
 
 .system-tab-placeholder {
-    padding: 12px 20px;
+    padding: 10px 16px;
     color: var(--text-tertiary);
-    font-size: 14px;
+    font-size: 13px;
     font-style: italic;
 }
 

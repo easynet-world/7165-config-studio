@@ -23,6 +23,7 @@ if (!fs.existsSync(DATA_DIR)) {
 
 const ENV_FILE_PATH = path.join(PROJECT_ROOT, '.env');
 const SYSTEMS_REGISTRY_PATH = path.join(DATA_DIR, 'systems-registry.json');
+const SYSTEM_SETTINGS_PATH = path.join(DATA_DIR, 'system-settings.json');
 const PUBLIC_DIR = path.join(PROJECT_ROOT, 'public');
 
 module.exports = {
@@ -30,6 +31,7 @@ module.exports = {
   DATA_DIR,
   ENV_FILE_PATH,
   SYSTEMS_REGISTRY_PATH,
+  SYSTEM_SETTINGS_PATH,
   PUBLIC_DIR
 };
 

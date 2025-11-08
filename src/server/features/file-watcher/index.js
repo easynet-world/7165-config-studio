@@ -4,11 +4,12 @@
  */
 
 const chokidar = require('chokidar');
-const { loadSystemsRegistry } = require('../systems/registry');
+const { loadSystemsRegistry, loadSystemSettings } = require('../systems/registry');
 
 class FileWatcher {
-  constructor(registryPath, projectRoot, notifyCallback) {
+  constructor(registryPath, systemSettingsPath, projectRoot, notifyCallback) {
     this.registryPath = registryPath;
+    this.systemSettingsPath = systemSettingsPath;
     this.projectRoot = projectRoot;
     this.notifyCallback = notifyCallback; // Callback to notify WebSocket clients
     this.watchers = new Map(); // Map of file path -> watcher instance
@@ -24,19 +25,26 @@ class FileWatcher {
     }
 
     try {
-      // Load all registered systems
+      // Load System Settings separately
+      const systemSettings = await loadSystemSettings(this.systemSettingsPath, this.projectRoot);
+      if (systemSettings) {
+        this.watchFile(systemSettings.configPath, systemSettings.name);
+      }
+      
+      // Load all registered systems (excluding System Settings)
       const systems = await loadSystemsRegistry(this.registryPath, this.projectRoot);
       
       // Watch each system's config file
       for (const system of systems) {
-        this.watchFile(system.configPath, system.id);
+        this.watchFile(system.configPath, system.name);
       }
 
-      // Also watch the registry file itself for new systems
+      // Also watch the registry files for changes
       this.watchRegistry();
 
       this.isWatching = true;
-      console.log(`File watcher started. Monitoring ${systems.length} configuration file(s).`);
+      const totalFiles = (systemSettings ? 1 : 0) + systems.length;
+      console.log(`File watcher started. Monitoring ${totalFiles} configuration file(s).`);
     } catch (error) {
       console.error('Error starting file watcher:', error);
     }
@@ -45,9 +53,9 @@ class FileWatcher {
   /**
    * Watch a specific config file
    * @param {string} filePath - Absolute path to the config file
-   * @param {string} systemId - System ID associated with this file
+   * @param {string} systemName - System name associated with this file
    */
-  watchFile(filePath, systemId) {
+  watchFile(filePath, systemName) {
     // Skip if already watching this file
     if (this.watchers.has(filePath)) {
       return;
@@ -64,12 +72,13 @@ class FileWatcher {
       });
 
       watcher.on('change', (path) => {
-        console.log(`Config file changed: ${path} (System: ${systemId})`);
+        console.log(`Config file changed: ${path} (System: ${systemName})`);
         // Notify all clients about the change
         if (this.notifyCallback) {
           this.notifyCallback({
             type: 'file-changed',
-            systemId: systemId,
+            systemName: systemName,
+            systemId: systemName, // Backward compatibility
             filePath: path
           });
         }
@@ -102,23 +111,32 @@ class FileWatcher {
       console.log('Systems registry changed. Updating file watchers...');
       
       try {
-        // Reload systems
+        // Reload System Settings
+        const systemSettings = await loadSystemSettings(this.systemSettingsPath, this.projectRoot);
+        
+        // Reload systems (excluding System Settings)
         const systems = await loadSystemsRegistry(this.registryPath, this.projectRoot);
         
         // Get current watched files
         const currentWatched = new Set(this.watchers.keys());
         
+        // Watch System Settings if it exists
+        if (systemSettings && !currentWatched.has(systemSettings.configPath)) {
+          this.watchFile(systemSettings.configPath, systemSettings.name);
+        }
+        
         // Watch new files
         for (const system of systems) {
           if (!currentWatched.has(system.configPath)) {
-            this.watchFile(system.configPath, system.id);
+            this.watchFile(system.configPath, system.name);
           }
         }
         
         // Stop watching files that are no longer in registry
+        const allSystems = systemSettings ? [systemSettings, ...systems] : systems;
         for (const [filePath, watcher] of this.watchers.entries()) {
-          const stillExists = systems.some(s => s.configPath === filePath);
-          if (!stillExists && filePath !== this.registryPath) {
+          const stillExists = allSystems.some(s => s.configPath === filePath);
+          if (!stillExists && filePath !== this.registryPath && filePath !== this.systemSettingsPath) {
             watcher.close();
             this.watchers.delete(filePath);
           }
@@ -134,6 +152,40 @@ class FileWatcher {
         console.error('Error updating file watchers:', error);
       }
     });
+    
+    // Also watch System Settings file for changes
+    const systemSettingsWatcher = chokidar.watch(this.systemSettingsPath, {
+      persistent: true,
+      ignoreInitial: true,
+      awaitWriteFinish: {
+        stabilityThreshold: 300,
+        pollInterval: 100
+      }
+    });
+
+    systemSettingsWatcher.on('change', async () => {
+      console.log('System Settings file changed. Updating file watchers...');
+      
+      try {
+        const systemSettings = await loadSystemSettings(this.systemSettingsPath, this.projectRoot);
+        const currentWatched = new Set(this.watchers.keys());
+        
+        if (systemSettings && !currentWatched.has(systemSettings.configPath)) {
+          this.watchFile(systemSettings.configPath, systemSettings.name);
+        }
+        
+        // Notify clients that registry changed
+        if (this.notifyCallback) {
+          this.notifyCallback({
+            type: 'registry-changed'
+          });
+        }
+      } catch (error) {
+        console.error('Error updating System Settings watcher:', error);
+      }
+    });
+
+    this.watchers.set(this.systemSettingsPath, systemSettingsWatcher);
 
     registryWatcher.on('error', (error) => {
       console.error(`Error watching registry file ${this.registryPath}:`, error);

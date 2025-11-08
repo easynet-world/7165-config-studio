@@ -8,7 +8,7 @@ const cors = require('cors');
 const { createStaticMiddleware } = require('./middleware/static');
 const { createSystemsRoutes } = require('./features/systems/routes');
 const { createSettingsRoutes } = require('./features/settings/routes');
-const { ENV_FILE_PATH, SYSTEMS_REGISTRY_PATH, PUBLIC_DIR, PROJECT_ROOT } = require('./config/paths');
+const { ENV_FILE_PATH, SYSTEMS_REGISTRY_PATH, SYSTEM_SETTINGS_PATH, PUBLIC_DIR, PROJECT_ROOT } = require('./config/paths');
 
 /**
  * Create and configure Express application
@@ -25,8 +25,8 @@ function createApp() {
   app.use(createStaticMiddleware(PUBLIC_DIR));
 
   // API Routes
-  app.use('/api/systems', createSystemsRoutes(SYSTEMS_REGISTRY_PATH, PROJECT_ROOT));
-  app.use('/api/settings', createSettingsRoutes(ENV_FILE_PATH, SYSTEMS_REGISTRY_PATH, PROJECT_ROOT));
+  app.use('/api/systems', createSystemsRoutes(SYSTEMS_REGISTRY_PATH, SYSTEM_SETTINGS_PATH, PROJECT_ROOT));
+  app.use('/api/settings', createSettingsRoutes(ENV_FILE_PATH, SYSTEMS_REGISTRY_PATH, SYSTEM_SETTINGS_PATH, PROJECT_ROOT));
 
   // Config endpoint - serves configuration from .env
   app.get('/api/config', (req, res) => {

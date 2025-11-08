@@ -37,30 +37,29 @@ async function registerStartupSystem(registryPath, projectRoot, configPath, syst
       ? path.normalize(configPath) 
       : path.normalize(path.join(projectRoot, configPath));
 
-    // Check if system with this path already exists
-    const existingSystem = systems.find(s => s.configPath === absoluteConfigPath);
+    // Check if system with this path already exists (normalized comparison)
+    const normalizedNewPath = path.normalize(absoluteConfigPath);
+    const existingSystem = systems.find(s => {
+      const normalizedExisting = path.normalize(s.configPath);
+      return normalizedExisting === normalizedNewPath;
+    });
     if (existingSystem) {
       console.log(`System already registered: ${existingSystem.name} (${absoluteConfigPath})`);
       return false;
     }
+    
+    // Check for duplicate name
+    if (systems.some(s => s.name === systemName)) {
+      console.log(`System with name "${systemName}" already exists, skipping registration`);
+      return false;
+    }
 
     // Validate and create system
-    const validatedSystem = validateSystem(
+    const validatedSystem = await validateSystem(
       { name: systemName, configPath: absoluteConfigPath },
-      projectRoot
+      projectRoot,
+      true
     );
-
-    // Check for duplicate name
-    if (systems.some(s => s.name === validatedSystem.name)) {
-      // Append number if name exists
-      let counter = 1;
-      let newName = `${validatedSystem.name} ${counter}`;
-      while (systems.some(s => s.name === newName)) {
-        counter++;
-        newName = `${validatedSystem.name} ${counter}`;
-      }
-      validatedSystem.name = newName;
-    }
 
     // Add to registry
     systems.push(validatedSystem);
@@ -110,36 +109,37 @@ function getStartupConfig() {
 
 /**
  * Register Config Studio itself (default .env file) as "System Settings" if not already registered
- * @param {string} registryPath - Path to registry file
+ * System Settings is stored separately from other systems
+ * @param {string} systemSettingsPath - Path to system settings file
  * @param {string} projectRoot - Project root directory
  * @param {string} defaultEnvPath - Path to default .env file
  * @returns {Promise<boolean>} - True if system was registered, false if already exists
  */
-async function registerConfigStudio(registryPath, projectRoot, defaultEnvPath) {
+async function registerConfigStudio(systemSettingsPath, projectRoot, defaultEnvPath) {
   try {
-    // Load existing systems
-    const systems = await loadSystemsRegistry(registryPath, projectRoot);
+    const { loadSystemSettings, saveSystemSettings } = require('./registry');
+    
+    // Load existing System Settings
+    const existingSystemSettings = await loadSystemSettings(systemSettingsPath, projectRoot);
     
     // Normalize default env path to absolute
     const absoluteEnvPath = path.isAbsolute(defaultEnvPath) 
       ? path.normalize(defaultEnvPath) 
       : path.normalize(path.join(projectRoot, defaultEnvPath));
 
-    // Check if System Settings or a system with this path already exists
-    // Also check for old "Config Studio" name for migration
-    const existingSystem = systems.find(s => 
-      s.name === 'System Settings' || s.name === 'Config Studio' || s.configPath === absoluteEnvPath
-    );
-    
-    if (existingSystem) {
-      // If exists but name is different, update it to "System Settings"
-      if (existingSystem.name !== 'System Settings' && existingSystem.configPath === absoluteEnvPath) {
-        existingSystem.name = 'System Settings';
-        await saveSystemsRegistry(registryPath, systems);
-        console.log(`Updated system name to "System Settings" (${absoluteEnvPath})`);
-        return true;
+    // Check if System Settings already exists and points to the same file
+    if (existingSystemSettings) {
+      const normalizedExisting = path.normalize(existingSystemSettings.configPath);
+      const normalizedEnvPath = path.normalize(absoluteEnvPath);
+      if (normalizedExisting === normalizedEnvPath) {
+        // Already registered with correct path
+        return false;
       }
-      return false;
+      // Path changed, update it
+      existingSystemSettings.configPath = absoluteEnvPath;
+      await saveSystemSettings(systemSettingsPath, existingSystemSettings);
+      console.log(`Updated System Settings path: ${absoluteEnvPath}`);
+      return true;
     }
 
     // Register as "System Settings"
@@ -149,8 +149,7 @@ async function registerConfigStudio(registryPath, projectRoot, defaultEnvPath) {
       true
     );
 
-    systems.push(validatedSystem);
-    await saveSystemsRegistry(registryPath, systems);
+    await saveSystemSettings(systemSettingsPath, validatedSystem);
     
     console.log(`Registered System Settings: ${validatedSystem.configPath}`);
     return true;
@@ -222,18 +221,41 @@ async function registerExampleSystems(registryPath, projectRoot) {
     }
     
     // Clean up invalid systems (files that don't exist or are from different project)
+    // Also remove duplicates by name and config path
     const validSystems = [];
+    const seenNames = new Set();
+    const seenPaths = new Set();
+    
     for (const system of systems) {
       try {
         // Check if file exists
         await fs.access(system.configPath);
         // Check if path is within current project (for relative paths)
         const systemPath = path.relative(projectRoot, system.configPath);
-        if (!systemPath.startsWith('..')) {
-          validSystems.push(system);
-        } else {
+        if (systemPath.startsWith('..')) {
           console.log(`Removing invalid system (outside project): ${system.name} (${system.configPath})`);
+          continue;
         }
+        
+        // Normalize path for comparison
+        const normalizedPath = path.normalize(system.configPath);
+        
+        // Check for duplicate name
+        if (seenNames.has(system.name)) {
+          console.log(`Removing duplicate system (same name): ${system.name} (${system.configPath})`);
+          continue;
+        }
+        
+        // Check for duplicate config path
+        if (seenPaths.has(normalizedPath)) {
+          console.log(`Removing duplicate system (same config file): ${system.name} (${system.configPath})`);
+          continue;
+        }
+        
+        // System is valid and unique
+        validSystems.push(system);
+        seenNames.add(system.name);
+        seenPaths.add(normalizedPath);
       } catch (error) {
         // File doesn't exist, remove from registry
         console.log(`Removing invalid system (file not found): ${system.name} (${system.configPath})`);
@@ -247,14 +269,19 @@ async function registerExampleSystems(registryPath, projectRoot) {
         ? path.normalize(example.configPath) 
         : path.normalize(path.join(projectRoot, example.configPath));
       
-      // Check if system with this path already exists (by normalized path)
-      const exists = systems.some(s => {
+      // Check if system with this name or path already exists
+      const normalizedNewPath = path.normalize(absolutePath);
+      const existsByName = systems.some(s => s.name === example.name);
+      const existsByPath = systems.some(s => {
         const normalizedExisting = path.normalize(s.configPath);
-        const normalizedNew = path.normalize(absolutePath);
-        return normalizedExisting === normalizedNew;
+        return normalizedExisting === normalizedNewPath;
       });
       
-      if (!exists) {
+      if (existsByName) {
+        console.log(`Skipping example system (duplicate name): ${example.name} (${absolutePath})`);
+      } else if (existsByPath) {
+        console.log(`Skipping example system (duplicate config file): ${example.name} (${absolutePath})`);
+      } else {
         try {
           // Check if file exists before registering
           await fs.access(absolutePath);
@@ -271,8 +298,6 @@ async function registerExampleSystems(registryPath, projectRoot) {
           // File doesn't exist or validation failed, skip
           console.warn(`Skipping example system ${example.name}: ${error.message}`);
         }
-      } else {
-        console.log(`Example system already registered: ${example.name} (${absolutePath})`);
       }
     }
     

@@ -1,6 +1,5 @@
 # Config Studio
 
-[![npm version](https://img.shields.io/npm/v/@easynet/config-studio.svg)](https://www.npmjs.com/package/@easynet/config-studio)
 [![npm version (unscoped)](https://img.shields.io/npm/v/config-studio.svg)](https://www.npmjs.com/package/config-studio)
 [![npm downloads](https://img.shields.io/npm/dm/@easynet/config-studio.svg)](https://www.npmjs.com/package/@easynet/config-studio)
 [![Node.js version](https://img.shields.io/node/v/@easynet/config-studio.svg)](https://nodejs.org/)

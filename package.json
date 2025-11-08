@@ -1,6 +1,6 @@
 {
   "name": "@easynet/config-studio",
-  "version": "0.0.1",
+  "version": "1.0.1",
   "description": "A beautiful web-based UI for managing configuration files (.env, .properties) - Config Studio",
   "main": "src/server/index.js",
   "bin": {

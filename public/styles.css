@@ -130,6 +130,14 @@ body {
     gap: 6px;
 }
 
+.system-tab-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.system-tab-edit,
 .system-tab-delete {
     display: flex;
     align-items: center;
@@ -148,6 +156,7 @@ body {
     flex-shrink: 0;
 }
 
+.system-tab-edit:hover,
 .system-tab-delete:hover {
     background: var(--bg-hover);
     color: var(--text-primary);

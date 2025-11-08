@@ -563,12 +563,26 @@ class SettingsApp {
             
             tab.innerHTML = `
                 <span class="system-tab-name">${this.escapeHtml(system.name)}</span>
-                <button class="system-tab-delete" title="Delete system" data-system-name="${this.escapeHtml(system.name)}">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                    </svg>
-                </button>
+                <div class="system-tab-actions">
+                    <button class="system-tab-edit" title="Edit system" data-system-name="${this.escapeHtml(system.name)}">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                        </svg>
+                    </button>
+                    <button class="system-tab-delete" title="Delete system" data-system-name="${this.escapeHtml(system.name)}">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                    </button>
+                </div>
             `;
+            
+            // Handle edit button click
+            const editBtn = tab.querySelector('.system-tab-edit');
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent tab switch
+                this.editSystem(system.name);
+            });
             
             // Handle delete button click
             const deleteBtn = tab.querySelector('.system-tab-delete');
@@ -579,8 +593,8 @@ class SettingsApp {
             
             // Handle tab click (switch system)
             tab.addEventListener('click', (e) => {
-                // Don't switch if clicking the delete button
-                if (e.target.closest('.system-tab-delete')) {
+                // Don't switch if clicking action buttons
+                if (e.target.closest('.system-tab-edit') || e.target.closest('.system-tab-delete')) {
                     return;
                 }
                 
@@ -1647,6 +1661,8 @@ class SettingsApp {
         
         const system = this.systems.find(s => s.name === systemName);
         if (system) {
+            // Open modal and show form with system data
+            document.getElementById('systemModal').classList.add('active');
             this.showSystemForm(system);
         }
     }

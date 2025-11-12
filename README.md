@@ -290,6 +290,11 @@ All processes are named "config-studio" for easy identification:
 - View processes: `ps aux | grep config-studio`
 - Check if running: `pgrep -f config-studio`
 
+## Maintainer
+
+**Boqiang Liang**  
+Email: boqiang.liang@easynet.world
+
 ## License
 
 MIT

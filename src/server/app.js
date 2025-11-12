@@ -1,5 +1,7 @@
 /**
  * Express application setup
+ * 
+ * @maintainer Boqiang Liang <boqiang.liang@easynet.world>
  */
 
 const express = require('express');

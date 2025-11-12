@@ -2,6 +2,8 @@
 
 /**
  * Config Studio Server Entry Point
+ * 
+ * @maintainer Boqiang Liang <boqiang.liang@easynet.world>
  */
 
 // Environment variables will be loaded after ensuring .env.config-studio exists

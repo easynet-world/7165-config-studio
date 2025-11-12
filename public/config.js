@@ -1,3 +1,9 @@
+/**
+ * Config Studio Frontend Configuration Management
+ * 
+ * @maintainer Boqiang Liang <boqiang.liang@easynet.world>
+ */
+
 // Format field name by splitting on common delimiters and capitalizing
 function formatFieldName(key) {
     const parts = key.split(/[_\-.]+/);

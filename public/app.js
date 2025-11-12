@@ -1,3 +1,9 @@
+/**
+ * Config Studio Main Application
+ * 
+ * @maintainer Boqiang Liang <boqiang.liang@easynet.world>
+ */
+
 // Format field name by splitting on common delimiters and capitalizing
 function formatFieldName(key) {
     // Split by common delimiters: underscore, hyphen, dot
@@ -507,6 +513,9 @@ class SettingsApp {
         if (!pathDisplay) return;
         
         if (this.currentSystem && this.currentSystem.configPath) {
+            // Only show edit button if it's not System Settings
+            const showEditButton = this.currentSystem.name !== 'System Settings';
+            
             pathDisplay.innerHTML = `
                 <div class="config-path-content">
                     <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" class="config-path-icon">
@@ -515,10 +524,28 @@ class SettingsApp {
                     <span class="config-path-label">Config File:</span>
                     <span class="config-path-value" title="${this.escapeHtml(this.currentSystem.configPath)}">${this.escapeHtml(this.currentSystem.configPath)}</span>
                 </div>
+                ${showEditButton ? `
+                <button class="config-path-edit-btn" title="Edit system" data-system-name="${this.escapeHtml(this.currentSystem.name)}">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                    <span>Edit System</span>
+                </button>
+                ` : ''}
             `;
-            pathDisplay.style.display = 'block';
+            pathDisplay.classList.add('active');
+            
+            // Add event listener for edit button
+            if (showEditButton) {
+                const editBtn = pathDisplay.querySelector('.config-path-edit-btn');
+                if (editBtn) {
+                    editBtn.addEventListener('click', () => {
+                        this.editSystem(this.currentSystem.name);
+                    });
+                }
+            }
         } else {
-            pathDisplay.style.display = 'none';
+            pathDisplay.classList.remove('active');
         }
     }
 

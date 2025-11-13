@@ -115,6 +115,159 @@ The config file path can be:
 - Future support planned for: YAML, XML, JSON, and other configuration formats
 - The system uses an extensible format handler architecture, making it easy to add new formats
 
+## API Reference
+
+Config Studio provides a RESTful API for managing systems and settings programmatically. All endpoints are prefixed with `/api` and return JSON responses.
+
+> **Note:** The default port is `8880`. If you've configured a different port, update the URL accordingly.
+
+### Systems API
+
+| Method | Endpoint | Description | Request Body | Response |
+|--------|----------|-------------|--------------|----------|
+| `GET` | `/api/systems` | Get all registered systems | - | `200 OK` - Array of system objects |
+| `POST` | `/api/systems` | Register a new system | `{ "name": string, "configPath": string }` | `201 Created` - Created system object |
+| `PUT` | `/api/systems/:name` | Update an existing system | `{ "name": string, "configPath": string }` | `200 OK` - Updated system object |
+| `DELETE` | `/api/systems/:name` | Delete a system | - | `200 OK` - `{ "success": true }` |
+
+**System Object:**
+```json
+{
+  "name": "My System",
+  "configPath": "/absolute/path/to/config.file"
+}
+```
+
+**Validation Rules:**
+- `name`: Required, non-empty string, must be unique
+- `configPath`: Required, non-empty string (relative or absolute), must be unique, file must exist
+
+### Settings API
+
+| Method | Endpoint | Query Parameters | Description | Request Body | Response |
+|--------|----------|------------------|-------------|--------------|----------|
+| `GET` | `/api/settings` | `system=<systemName>` | Get settings for a registered system | - | `200 OK` - Settings object with sections |
+| `GET` | `/api/settings` | `system=<systemName>&file=<absolutePath>` | Get settings for a specific file | - | `200 OK` - Settings object with sections |
+| `POST` | `/api/settings` | `system=<systemName>` | Save settings for a registered system | Settings object or raw content | `200 OK` - `{ "success": true }` |
+| `POST` | `/api/settings` | `system=<systemName>&file=<absolutePath>` | Save settings for a specific file | Settings object or raw content | `200 OK` - `{ "success": true }` |
+
+**Settings Object (structured):**
+```json
+{
+  "sections": {
+    "Section Name": {
+      "key1": "value1",
+      "key2": "value2"
+    }
+  },
+  "sectionOrder": ["Section Name"]
+}
+```
+
+**Settings Object (raw/unsupported format):**
+```json
+{
+  "raw": true,
+  "content": "raw file content here"
+}
+```
+
+### Config API
+
+| Method | Endpoint | Description | Response |
+|--------|----------|-------------|----------|
+| `GET` | `/api/config` | Get application configuration (theme) | `200 OK` - `{ "defaultTheme": "cyberpunk" }` |
+
+### API Examples
+
+#### Get All Systems
+
+```bash
+curl http://localhost:8880/api/systems
+```
+
+#### Register a New System
+
+```bash
+curl -X POST http://localhost:8880/api/systems \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My API Service",
+    "configPath": "/absolute/path/to/config.json"
+  }'
+```
+
+**With relative path:**
+```bash
+curl -X POST http://localhost:8880/api/systems \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Database Service",
+    "configPath": "examples/database-service/config.properties"
+  }'
+```
+
+#### Update a System
+
+```bash
+curl -X PUT http://localhost:8880/api/systems/My%20System \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Updated System Name",
+    "configPath": "/new/path/to/config.json"
+  }'
+```
+
+#### Delete a System
+
+```bash
+curl -X DELETE http://localhost:8880/api/systems/My%20System
+```
+
+#### Get Settings for a System
+
+```bash
+curl "http://localhost:8880/api/settings?system=My%20System"
+```
+
+#### Save Settings for a System
+
+```bash
+curl -X POST "http://localhost:8880/api/settings?system=My%20System" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sections": {
+      "Server": {
+        "PORT": "3000",
+        "HOST": "localhost"
+      }
+    },
+    "sectionOrder": ["Server"]
+  }'
+```
+
+#### Get Application Config
+
+```bash
+curl http://localhost:8880/api/config
+```
+
+### Error Responses
+
+| Status Code | Description |
+|-------------|-------------|
+| `400` | Bad Request - Validation error (missing fields, duplicate name/path, file doesn't exist, invalid format) |
+| `404` | Not Found - System or file not found |
+| `500` | Internal Server Error - Server error occurred |
+
+### Error Response Format
+
+```json
+{
+  "error": "Error message description"
+}
+```
+
 ### Managing Systems
 
 - **Switch systems**: Use the dropdown selector in the header
